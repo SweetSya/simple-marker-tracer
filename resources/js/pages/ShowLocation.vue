@@ -948,6 +948,7 @@ const toggleLocationTracking = () => {
         if (trackingInterval.value) {
             clearInterval(trackingInterval.value);
             trackingInterval.value = null;
+            currentCameraMode.value = '';
         }
         isTrackingLocation.value = false;
 
