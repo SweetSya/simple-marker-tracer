@@ -5,6 +5,9 @@
 @plugin "flowbite/plugin";
 @source "../node_modules/flowbite";
 
+/* Notyf */
+@import 'notyf/notyf.min.css';
+
 /* Datatables */
 @import 'datatables.net-dt/css/dataTables.dataTables.css';
 @import 'datatables.net-responsive-dt/css/responsive.dataTables.css';

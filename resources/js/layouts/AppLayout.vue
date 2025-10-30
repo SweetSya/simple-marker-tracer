@@ -9,6 +9,7 @@
 </template>
 
 <script lang="ts" setup>
+import { initNotyf } from '@/composables/useNotyf';
 import { initFlowbite } from 'flowbite';
 import { nextTick, onMounted } from 'vue';
 import BottomBar from './app/BottomBar.vue';
@@ -17,6 +18,7 @@ import TopBar from './app/TopBar.vue';
 onMounted(() => {
     nextTick(() => {
         initFlowbite();
+        initNotyf();
     });
 });
 </script>
