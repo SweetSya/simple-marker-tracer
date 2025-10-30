@@ -90,12 +90,12 @@
                                 </div>
                             </div>
                             <div class="mt-2 flex items-center space-x-4">
-                                <div class="text-sm text-gray-500">
+                                <div class="text-xs text-gray-500 sm:text-sm">
                                     Last updated: {{ lastUpdated }}
                                 </div>
                                 <div
                                     v-if="distanceToCenter !== null"
-                                    class="text-sm text-gray-500"
+                                    class="text-xs text-gray-500 sm:text-sm"
                                 >
                                     Distance: {{ distanceToCenter.toFixed(0) }}m
                                 </div>
@@ -123,17 +123,6 @@
                             }}
                         </button>
                     </div>
-
-                    <!-- <div
-                        v-if="currentLocation"
-                        class="mt-4 text-sm text-gray-600"
-                    >
-                        Current Position: {{ currentLocation.lat.toFixed(6) }},
-                        {{ currentLocation.lng.toFixed(6) }}
-                        <span v-if="currentLocation.accuracy" class="ml-2">
-                            (±{{ Math.round(currentLocation.accuracy) }}m)
-                        </span>
-                    </div> -->
                 </div>
             </div>
 
@@ -145,14 +134,14 @@
                 >
                     <!-- Follow User Button -->
                     <div
-                        class="rounded-lg border border-gray-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm"
+                        class="rounded-lg border border-gray-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm"
                     >
                         <button
                             @click="followUser"
                             :disabled="!currentLocation"
                             :class="[
-                                'flex w-full items-center justify-center rounded-md px-3 py-2 text-sm font-medium shadow-sm transition-all duration-200',
-                                isFollowingUser
+                                'flex w-full items-center justify-center rounded-md px-1 py-1 text-xs font-medium shadow-sm transition-all duration-200',
+                                currentCameraMode === 'follow'
                                     ? 'bg-blue-500 text-white hover:bg-blue-600'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
                                 !currentLocation
@@ -179,19 +168,24 @@
                                     d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                 />
                             </svg>
-                            {{ isFollowingUser ? 'Following' : 'Follow Me' }}
+                            {{
+                                currentCameraMode === 'follow'
+                                    ? 'Following'
+                                    : 'Follow Me'
+                            }}
                         </button>
                     </div>
+
                     <!-- Overview Button -->
                     <div
-                        class="rounded-lg border border-gray-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm"
+                        class="rounded-lg border border-gray-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm"
                     >
                         <button
                             @click="showOverview"
                             :disabled="!currentLocation"
                             :class="[
-                                'flex w-full items-center justify-center rounded-md px-3 py-2 text-sm font-medium shadow-sm transition-all duration-200',
-                                isOverviewActive
+                                'flex w-full items-center justify-center rounded-md px-1 py-1 text-xs font-medium shadow-sm transition-all duration-200',
+                                currentCameraMode === 'overview'
                                     ? 'bg-green-500 text-white hover:bg-green-600'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
                                 !currentLocation
@@ -218,21 +212,28 @@
                                     d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                                 />
                             </svg>
-                            {{ isOverviewActive ? 'Center Active' : 'Center' }}
+                            {{
+                                currentCameraMode === 'overview'
+                                    ? 'Center Active'
+                                    : 'Center'
+                            }}
                         </button>
                     </div>
 
                     <!-- Line Toggle -->
                     <div
-                        class="rounded-lg border border-gray-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm"
+                        class="rounded-lg border border-gray-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm"
                     >
                         <button
                             @click="toggleConnectionLine"
                             :class="[
-                                'flex w-full items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200',
+                                'flex w-full items-center justify-center rounded-md px-1 py-1 text-xs font-medium transition-all duration-200',
                                 showConnectionLine
                                     ? 'bg-orange-500 text-white shadow-sm'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                !currentLocation
+                                    ? 'cursor-not-allowed opacity-50'
+                                    : '',
                             ]"
                             :disabled="!currentLocation"
                         >
@@ -252,16 +253,115 @@
                             {{ showConnectionLine ? 'Hide Line' : 'Show Line' }}
                         </button>
                     </div>
+                    <!-- Free Roam -->
+                    <div
+                        class="rounded-lg border border-gray-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm"
+                    >
+                        <button
+                            @click="toggleFreeRoam"
+                            :class="[
+                                'flex w-full items-center justify-center rounded-md px-1 py-1 text-xs font-medium transition-all duration-200',
+                                currentCameraMode === 'free-roam'
+                                    ? 'bg-amber-500 text-white shadow-sm'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                !currentLocation
+                                    ? 'cursor-not-allowed opacity-50'
+                                    : '',
+                            ]"
+                            :disabled="!currentLocation"
+                        >
+                            <Hand class="mr-1 h-4 w-4" />
+                            {{
+                                currentCameraMode === 'free-roam'
+                                    ? 'Free View'
+                                    : 'Locked View'
+                            }}
+                        </button>
+                    </div>
+                    <!-- Tile Selector -->
+                    <div
+                        class="rounded-lg border border-gray-200 bg-white/95 p-1 shadow-lg backdrop-blur-sm"
+                    >
+                        <div class="relative">
+                            <button
+                                @click="toggleTileSelector"
+                                :class="[
+                                    'flex w-full items-center justify-center rounded-md px-1 py-1 text-xs font-medium transition-all duration-200',
+                                    showTileSelector
+                                        ? 'bg-purple-500 text-white shadow-sm'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                ]"
+                            >
+                                <svg
+                                    class="mr-1 h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                                    />
+                                </svg>
+                                {{ currentTileLayer.name }}
+                            </button>
+
+                            <!-- Tile Selector Dropdown -->
+                            <div
+                                v-if="showTileSelector"
+                                class="absolute top-full right-0 z-[1001] mt-1 w-48 rounded-lg border border-gray-200 bg-white shadow-lg"
+                            >
+                                <div class="p-2">
+                                    <div
+                                        class="mb-2 px-2 text-xs font-medium text-gray-500"
+                                    >
+                                        Map Style
+                                    </div>
+                                    <button
+                                        v-for="tile in availableTiles"
+                                        :key="tile.id"
+                                        @click="selectTile(tile)"
+                                        :class="[
+                                            'flex w-full items-center rounded-md px-1 py-1 text-xs transition-colors',
+                                            currentTileLayer.id === tile.id
+                                                ? 'bg-purple-100 text-purple-800'
+                                                : 'text-gray-700 hover:bg-gray-100',
+                                        ]"
+                                    >
+                                        <div
+                                            :class="[
+                                                'mr-2 h-3 w-3 rounded-full border-2',
+                                                currentTileLayer.id === tile.id
+                                                    ? 'border-purple-500 bg-purple-500'
+                                                    : 'border-gray-300',
+                                            ]"
+                                        ></div>
+                                        <div>
+                                            <div class="font-medium">
+                                                {{ tile.name }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                {{ tile.description }}
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div
                     ref="mapContainer"
-                    class="h-screen min-h-[600px] max-h-[800px] w-full rounded-lg"
+                    class="h-screen max-h-[800px] min-h-[600px] w-full rounded-lg"
                 ></div>
                 <div
-                    :class="
-                        !isTrackingLocation ? 'bg-black/40' : 'bg-transparent'
-                    "
+                    :class="[
+                        !isTrackingLocation ? 'bg-black/40' : 'bg-transparent',
+                        isFreeRoamActive ? 'hidden' : 'block',
+                    ]"
                     class="absolute top-0 left-0 z-[500] flex h-full w-full items-center justify-center rounded-lg"
                 >
                     <p v-show="!isTrackingLocation" class="text-white">
@@ -282,6 +382,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import markerRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { Hand } from 'lucide-vue-next';
 
 const DefaultIcon = L.icon({
     iconUrl: markerIcon,
@@ -317,9 +418,42 @@ const props = defineProps<{
     } | null;
 }>();
 
+// Tile layer definitions
+const availableTiles = [
+    {
+        id: 'osm',
+        name: 'OpenStreetMap',
+        description: 'Standard map view',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '© OpenStreetMap contributors',
+    },
+    {
+        id: 'satellite',
+        name: 'Satellite',
+        description: 'Aerial imagery',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '© Esri, Maxar, Earthstar Geographics',
+    },
+    {
+        id: 'terrain',
+        name: 'Terrain',
+        description: 'Topographic view',
+        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attribution: '© OpenTopoMap contributors',
+    },
+    {
+        id: 'dark',
+        name: 'Dark Mode',
+        description: 'Dark themed map',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '© CARTO',
+    },
+];
+
 // Reactive variables
 const mapContainer = ref<HTMLElement>();
 const map = ref<L.Map | null>(null);
+const currentTileLayerRef = ref<L.TileLayer | null>(null);
 const polygon = ref<L.Polygon | null>(null);
 const polygonCenter = ref<{ lat: number; lng: number } | null>(null);
 const polygonCenterMarker = ref<L.Marker | null>(null);
@@ -336,10 +470,14 @@ const isGettingLocation = ref(false);
 const lastUpdated = ref('Never');
 const trackingInterval = ref<number | null>(null);
 const showConnectionLine = ref(false);
+const showTileSelector = ref(false);
+const currentTileLayer = ref(availableTiles[0]);
 
 // Add camera mode states
 const isOverviewActive = ref(false);
 const isFollowingUser = ref(false);
+const isFreeRoamActive = ref(false);
+const currentCameraMode = ref<'overview' | 'follow' | 'free-roam' | ''>('');
 
 // Computed
 const isInside = computed(() => {
@@ -410,6 +548,43 @@ const isPointInPolygon = (
 
     return inside;
 };
+// Toggle free roam
+
+const toggleFreeRoam = () => {
+    isFreeRoamActive.value = !isFreeRoamActive.value;
+    if (isFreeRoamActive.value) {
+        isOverviewActive.value = false;
+        isFollowingUser.value = false;
+        currentCameraMode.value = 'free-roam';
+    } else {
+        showOverview();
+    }
+};
+// Tile layer functions
+const toggleTileSelector = () => {
+    showTileSelector.value = !showTileSelector.value;
+};
+
+const selectTile = (tile: (typeof availableTiles)[0]) => {
+    if (!map.value || currentTileLayer.value.id === tile.id) {
+        showTileSelector.value = false;
+        return;
+    }
+
+    // Remove current tile layer
+    if (currentTileLayerRef.value) {
+        map.value.removeLayer(currentTileLayerRef.value);
+    }
+
+    // Add new tile layer
+    currentTileLayerRef.value = L.tileLayer(tile.url, {
+        attribution: tile.attribution,
+    }).addTo(map.value);
+
+    // Update current tile
+    currentTileLayer.value = tile;
+    showTileSelector.value = false;
+};
 
 // Reset to initial state
 const resetToInitialState = () => {
@@ -462,9 +637,14 @@ const resetToInitialState = () => {
 const showOverview = () => {
     if (!map.value) return;
 
-    // Set overview as active, disable follow mode
+    // Set overview as active FIRST for immediate visual feedback
     isOverviewActive.value = true;
     isFollowingUser.value = false;
+    isFreeRoamActive.value = false;
+
+    currentCameraMode.value = 'overview';
+
+    if (!map.value) return;
 
     if (currentLocation.value && polygonCenter.value) {
         const bounds = L.latLngBounds([
@@ -495,9 +675,14 @@ const showOverview = () => {
 const followUser = () => {
     if (!map.value || !currentLocation.value) return;
 
-    // Set follow as active, disable overview mode
+    // Set follow as active FIRST for immediate visual feedback
     isFollowingUser.value = true;
     isOverviewActive.value = false;
+    isFreeRoamActive.value = false;
+
+    currentCameraMode.value = 'follow';
+
+    if (!map.value || !currentLocation.value) return;
 
     // Zoom in on user location with nice zoom level
     map.value.setView(
@@ -577,34 +762,6 @@ const updateConnectionLine = () => {
                 opacity: 0.7,
             },
         ).addTo(map.value);
-
-        // Only add distance popup if not in follow mode to prevent camera interference
-        // if (!isFollowingUser.value) {
-        //     // Add distance label at midpoint
-        //     const midLat =
-        //         (currentLocation.value.lat + polygonCenter.value.lat) / 2;
-        //     const midLng =
-        //         (currentLocation.value.lng + polygonCenter.value.lng) / 2;
-
-        //     // Use a timeout to prevent popup from interfering with camera positioning
-        //     setTimeout(() => {
-        //         if (
-        //             map.value &&
-        //             showConnectionLine.value &&
-        //             !isFollowingUser.value
-        //         ) {
-        //             const distanceLabel = L.popup({
-        //                 closeButton: false,
-        //                 autoClose: false,
-        //                 closeOnClick: false,
-        //                 className: 'distance-popup',
-        //             })
-        //                 .setLatLng([midLat, midLng])
-        //                 .setContent(`${distanceToCenter.value?.toFixed(0)}m`)
-        //                 .openOn(map.value);
-        //         }
-        //     }, 100);
-        // }
     }
 };
 
@@ -614,15 +771,15 @@ const initMap = () => {
 
     map.value = L.map(mapContainer.value);
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+    // Add initial tile layer
+    currentTileLayerRef.value = L.tileLayer(currentTileLayer.value.url, {
+        attribution: currentTileLayer.value.attribution,
     }).addTo(map.value);
 
     // Calculate polygon center
     polygonCenter.value = calculatePolygonCenter(props.location.data.points);
 
-    // Add polygon center marker
+    // polygon center marker
     if (polygonCenter.value) {
         polygonCenterMarker.value = L.marker(
             [polygonCenter.value.lat, polygonCenter.value.lng],
@@ -649,7 +806,7 @@ const initMap = () => {
         `);
     }
 
-    // Add polygon
+    // polygon
     const polygonCoords = props.location.data.points.map(
         (point) => [point.lat, point.lng] as [number, number],
     );
@@ -671,11 +828,12 @@ const initMap = () => {
     // Fit map to polygon bounds initially
     map.value.fitBounds(polygon.value.getBounds());
 
-    // Add map interaction listeners to detect manual mode
-    map.value.on('dragstart zoomstart', () => {
-        // User is manually interacting with the map - disable auto modes
+    // interaction listeners to detect manual mode - use multiple events
+    map.value.on('dragstart drag zoomstart zoom movestart move', () => {
+        // User is manually interacting with the map - disable auto modes immediately
         isOverviewActive.value = false;
         isFollowingUser.value = false;
+        showTileSelector.value = false; // Also close tile selector
     });
 };
 
