@@ -42,7 +42,7 @@
         <!-- Main Content -->
         <div
             v-else-if="location"
-            class="relative mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+            class="relative mx-auto w-full max-w-7xl px-4 py-4 sm:px-6 md:py-8 lg:px-8"
         >
             <!-- Status Panel -->
             <div class="absolute bottom-16 left-0 z-[1000] w-full px-13">
@@ -256,8 +256,18 @@
 
                 <div
                     ref="mapContainer"
-                    class="h-screen max-h-[800px] w-full rounded-lg"
+                    class="h-screen min-h-[600px] max-h-[800px] w-full rounded-lg"
                 ></div>
+                <div
+                    :class="
+                        !isTrackingLocation ? 'bg-black/40' : 'bg-transparent'
+                    "
+                    class="absolute top-0 left-0 z-[500] flex h-full w-full items-center justify-center rounded-lg"
+                >
+                    <p v-show="!isTrackingLocation" class="text-white">
+                        Start tracking to reveal your location
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -569,32 +579,32 @@ const updateConnectionLine = () => {
         ).addTo(map.value);
 
         // Only add distance popup if not in follow mode to prevent camera interference
-        if (!isFollowingUser.value) {
-            // Add distance label at midpoint
-            const midLat =
-                (currentLocation.value.lat + polygonCenter.value.lat) / 2;
-            const midLng =
-                (currentLocation.value.lng + polygonCenter.value.lng) / 2;
+        // if (!isFollowingUser.value) {
+        //     // Add distance label at midpoint
+        //     const midLat =
+        //         (currentLocation.value.lat + polygonCenter.value.lat) / 2;
+        //     const midLng =
+        //         (currentLocation.value.lng + polygonCenter.value.lng) / 2;
 
-            // Use a timeout to prevent popup from interfering with camera positioning
-            setTimeout(() => {
-                if (
-                    map.value &&
-                    showConnectionLine.value &&
-                    !isFollowingUser.value
-                ) {
-                    const distanceLabel = L.popup({
-                        closeButton: false,
-                        autoClose: false,
-                        closeOnClick: false,
-                        className: 'distance-popup',
-                    })
-                        .setLatLng([midLat, midLng])
-                        .setContent(`${distanceToCenter.value?.toFixed(0)}m`)
-                        .openOn(map.value);
-                }
-            }, 100);
-        }
+        //     // Use a timeout to prevent popup from interfering with camera positioning
+        //     setTimeout(() => {
+        //         if (
+        //             map.value &&
+        //             showConnectionLine.value &&
+        //             !isFollowingUser.value
+        //         ) {
+        //             const distanceLabel = L.popup({
+        //                 closeButton: false,
+        //                 autoClose: false,
+        //                 closeOnClick: false,
+        //                 className: 'distance-popup',
+        //             })
+        //                 .setLatLng([midLat, midLng])
+        //                 .setContent(`${distanceToCenter.value?.toFixed(0)}m`)
+        //                 .openOn(map.value);
+        //         }
+        //     }, 100);
+        // }
     }
 };
 
@@ -718,8 +728,8 @@ const getCurrentLocation = () => {
         },
         {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000, // 1 minute
+            timeout: 5000,
+            maximumAge: 0,
         },
     );
 };
@@ -788,7 +798,7 @@ const toggleLocationTracking = () => {
     } else {
         // Start tracking
         getCurrentLocation(); // Get initial location
-        trackingInterval.value = setInterval(getCurrentLocation, 5000); // Every 5 seconds
+        trackingInterval.value = setInterval(getCurrentLocation, 3000); // Every 3 seconds
         isTrackingLocation.value = true;
         // Start Center and show line
         setTimeout(() => {
