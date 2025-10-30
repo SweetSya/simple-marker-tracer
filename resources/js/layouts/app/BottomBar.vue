@@ -9,10 +9,20 @@
                 <Link
                     href="/dashboard"
                     data-tooltip-target="tooltip-dashboard"
-                    class="group inline-flex flex-col items-center justify-center rounded-s-full px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    :class="[
+                        'group inline-flex flex-col items-center justify-center rounded-s-full px-5 transition-all duration-200',
+                        isActiveRoute('/dashboard')
+                            ? 'bg-primary-50 dark:bg-primary-900/20'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800',
+                    ]"
                 >
                     <LayoutDashboard
-                        class="h-5 w-5 text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500"
+                        :class="[
+                            'h-5 w-5 transition-colors duration-200',
+                            isActiveRoute('/dashboard')
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500',
+                        ]"
                     />
                     <span class="sr-only">Dashboard</span>
                 </Link>
@@ -24,13 +34,24 @@
                     Dashboard
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
+
                 <Link
                     href="/history-marker"
                     data-tooltip-target="tooltip-history"
-                    class="group inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    :class="[
+                        'group inline-flex flex-col items-center justify-center px-5 transition-all duration-200',
+                        isActiveRoute('/history-marker')
+                            ? 'bg-primary-50 dark:bg-primary-900/20'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800',
+                    ]"
                 >
                     <MapPinned
-                        class="h-5 w-5 text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500"
+                        :class="[
+                            'h-5 w-5 transition-colors duration-200',
+                            isActiveRoute('/history-marker')
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500',
+                        ]"
                     />
                     <span class="sr-only">Markers</span>
                 </Link>
@@ -42,11 +63,17 @@
                     Markers
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
+
                 <div class="flex items-center justify-center">
                     <Link
                         href="/create-marker"
                         data-tooltip-target="tooltip-new"
-                        class="group inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 font-medium hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 focus:outline-none dark:focus:ring-primary-800"
+                        :class="[
+                            'group inline-flex h-10 w-10 items-center justify-center rounded-full font-medium transition-all duration-200 focus:ring-4 focus:ring-primary-300 focus:outline-none dark:focus:ring-primary-800',
+                            isActiveRoute('/create-marker')
+                                ? 'scale-110 bg-primary-700 shadow-lg'
+                                : 'bg-primary-600 hover:scale-105 hover:bg-primary-700',
+                        ]"
                     >
                         <Plus class="h-5 w-5 text-white" />
                         <span class="sr-only">New item</span>
@@ -60,13 +87,24 @@
                     Create New Marker
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
+
                 <Link
                     href="/user-settings"
                     data-tooltip-target="tooltip-profile"
-                    class="group inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    :class="[
+                        'group inline-flex flex-col items-center justify-center px-5 transition-all duration-200',
+                        isActiveRoute('/user-settings')
+                            ? 'bg-primary-50 dark:bg-primary-900/20'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800',
+                    ]"
                 >
                     <User
-                        class="h-5 w-5 text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500"
+                        :class="[
+                            'h-5 w-5 transition-colors duration-200',
+                            isActiveRoute('/user-settings')
+                                ? 'text-primary-600 dark:text-primary-400'
+                                : 'text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500',
+                        ]"
                     />
                     <span class="sr-only">Profile</span>
                 </Link>
@@ -78,13 +116,14 @@
                     Profile
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
+
                 <Link
                     href="/logout"
                     data-tooltip-target="tooltip-logout"
-                    class="group inline-flex flex-col items-center justify-center rounded-e-full px-5 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    class="group inline-flex flex-col items-center justify-center rounded-e-full px-5 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                     <LogOut
-                        class="h-5 w-5 text-gray-500 group-hover:text-primary-600 dark:text-gray-400 dark:group-hover:text-primary-500"
+                        class="h-5 w-5 text-gray-500 transition-colors duration-200 group-hover:text-red-600 dark:text-gray-400 dark:group-hover:text-red-500"
                     />
                     <span class="sr-only">Logout</span>
                 </Link>
@@ -102,7 +141,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import {
     LayoutDashboard,
     LogOut,
@@ -110,4 +149,17 @@ import {
     Plus,
     User,
 } from 'lucide-vue-next';
+import { computed } from 'vue';
+
+const page = usePage();
+
+// Get current URL path
+const currentPath = computed(() => {
+    return page.url;
+});
+
+// Check if route is active
+const isActiveRoute = (routePath: string) => {
+    return currentPath.value === routePath;
+};
 </script>

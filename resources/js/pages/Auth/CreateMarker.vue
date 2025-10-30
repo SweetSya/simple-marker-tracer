@@ -72,15 +72,18 @@
 
             <!-- Map Container with Enhanced Controls -->
             <div
-                class="relative overflow-hidden rounded-2xl bg-white shadow-lg"
+                class="relative overflow-visible rounded-2xl bg-white shadow-lg"
             >
                 <!-- Floating Control Panel -->
-                <div class="absolute top-4 right-4 z-[500] space-y-3">
+                <div
+                    class="absolute top-1 z-[500] flex w-full sm:space-y-3 space-x-3 overflow-x-scroll sm:overflow-visible ps-13 pe-4 sm:top-4 sm:right-4 sm:block sm:w-auto sm:space-x-0 sm:p-0"
+                >
                     <!-- Primary Controls -->
                     <div
-                        class="space-y-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm"
+                        class="flex h-18 space-x-2 rounded-xl border border-gray-200 bg-white/95 p-3 text-nowrap shadow-lg backdrop-blur-sm sm:block sm:h-auto sm:space-y-2 sm:space-x-0 sm:text-wrap"
                     >
                         <button
+                            v-show="!showCoordinateInput"
                             @click="togglePolygonMode"
                             :class="[
                                 'flex w-full transform items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-105',
@@ -106,6 +109,36 @@
                                 isPolygonMode
                                     ? 'Cancel Drawing'
                                     : 'Draw Polygon'
+                            }}
+                        </button>
+
+                        <button
+                            v-show="!isPolygonMode"
+                            @click="toggleCoordinateInput"
+                            :class="[
+                                'flex w-full transform items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-105',
+                                showCoordinateInput
+                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                                    : 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md hover:from-indigo-600 hover:to-indigo-700',
+                            ]"
+                        >
+                            <svg
+                                class="mr-2 h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                />
+                            </svg>
+                            {{
+                                showCoordinateInput
+                                    ? 'Cancel Input'
+                                    : 'Enter Coordinates'
                             }}
                         </button>
 
@@ -139,7 +172,8 @@
 
                     <!-- Secondary Controls -->
                     <div
-                        class="space-y-2 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm"
+                        class="flex h-18 space-x-2 rounded-xl border border-gray-200 bg-white/95 p-3 text-nowrap shadow-lg backdrop-blur-sm sm:block sm:h-auto sm:space-y-2 sm:space-x-0 sm:text-wrap"
+                        v-show="!isPolygonMode && !showCoordinateInput"
                     >
                         <button
                             @click="moveToCurrentLocation"
@@ -231,141 +265,330 @@
 
                 <!-- Polygon Creation Panel -->
                 <div
-                    v-if="isPolygonMode || currentPolygonPoints.length > 0"
-                    class="absolute bottom-4 left-4 z-[501] max-w-sm"
+                    class="absolute right-0 bottom-0 flex w-full justify-end p-4"
                 >
                     <div
-                        class="overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm"
+                        v-if="
+                            isPolygonMode ||
+                            currentPolygonPoints.length > 0 ||
+                            showCoordinateInput
+                        "
+                        class="relative right-0 bottom-0 z-[501] w-full sm:w-sm"
                     >
-                        <!-- Panel Header -->
                         <div
-                            class="border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4"
+                            class="overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm"
                         >
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h3
-                                        class="text-lg font-semibold text-gray-900"
+                            <!-- Panel Header -->
+                            <div
+                                class="border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3
+                                            class="text-lg font-semibold text-gray-900"
+                                        >
+                                            Drawing Polygon
+                                        </h3>
+                                        <p class="text-sm text-gray-600">
+                                            {{ currentPolygonPoints.length }}
+                                            points added
+                                        </p>
+                                    </div>
+                                    <button
+                                        @click="
+                                            hidePolygonCreation =
+                                                !hidePolygonCreation
+                                        "
+                                        class="gp-2 rounded-lg transition-colors hover:bg-green-100"
                                     >
-                                        Drawing Polygon
-                                    </h3>
-                                    <p class="text-sm text-gray-600">
-                                        {{ currentPolygonPoints.length }} points
-                                        added
+                                        <ChevronUp
+                                            v-if="!hidePolygonCreation"
+                                            class="h-5 w-5 text-gray-500"
+                                        />
+                                        <ChevronDown
+                                            v-else
+                                            class="h-5 w-5 text-gray-500"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Panel Content -->
+                            <div
+                                v-show="!hidePolygonCreation"
+                                class="space-y-4 p-4"
+                            >
+                                <!-- Polygon Name Input -->
+                                <div>
+                                    <label
+                                        class="mb-2 block text-sm font-medium text-gray-700"
+                                    >
+                                        Polygon Name (Optional)
+                                    </label>
+                                    <input
+                                        v-model="currentPolygonName"
+                                        type="text"
+                                        placeholder="e.g., Park Area, Building Zone..."
+                                        class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-200"
+                                    />
+                                </div>
+
+                                <!-- Instructions -->
+                                <div
+                                    class="rounded-lg border border-blue-200 bg-blue-50 p-3"
+                                >
+                                    <p class="text-sm text-blue-800">
+                                        <svg
+                                            class="mr-1 inline h-4 w-4"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                clip-rule="evenodd"
+                                            />
+                                        </svg>
+                                        Click on the map to add points. You need
+                                        at least 3 points to create a polygon.
                                     </p>
                                 </div>
-                                <button
-                                    @click="
-                                        hidePolygonCreation =
-                                            !hidePolygonCreation
-                                    "
-                                    class="rounded-lg p-2 transition-colors hover:bg-green-100"
+
+                                <!-- Action Buttons -->
+                                <div class="flex gap-2">
+                                    <button
+                                        @click="finishPolygon"
+                                        :disabled="
+                                            currentPolygonPoints.length < 3
+                                        "
+                                        :class="[
+                                            'flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
+                                            currentPolygonPoints.length >= 3
+                                                ? 'transform bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:scale-105'
+                                                : 'cursor-not-allowed bg-gray-100 text-gray-400',
+                                        ]"
+                                    >
+                                        {{
+                                            currentPolygonPoints.length >= 3
+                                                ? '✓ Complete'
+                                                : `Need ${3 - currentPolygonPoints.length} more`
+                                        }}
+                                    </button>
+
+                                    <button
+                                        @click="cancelPolygon"
+                                        class="rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+
+                                <!-- Current Points List -->
+                                <div
+                                    v-if="currentPolygonPoints.length > 0"
+                                    class="max-h-32 overflow-y-auto"
                                 >
-                                    <ChevronUp
-                                        v-if="!hidePolygonCreation"
-                                        class="h-5 w-5 text-gray-500"
-                                    />
-                                    <ChevronDown
-                                        v-else
-                                        class="h-5 w-5 text-gray-500"
-                                    />
-                                </button>
+                                    <h4
+                                        class="mb-2 text-sm font-medium text-gray-700"
+                                    >
+                                        Points:
+                                    </h4>
+                                    <div class="space-y-1">
+                                        <div
+                                            v-for="(
+                                                point, index
+                                            ) in currentPolygonPoints"
+                                            :key="index"
+                                            class="flex items-center justify-between rounded-lg bg-gray-50 p-2 text-xs"
+                                        >
+                                            <span
+                                                class="font-medium text-gray-600"
+                                                >{{ index + 1 }}.</span
+                                            >
+                                            <span
+                                                class="font-mono text-gray-800"
+                                                >{{ point.lat.toFixed(4) }},
+                                                {{ point.lng.toFixed(4) }}</span
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Panel Content -->
+                <!-- Manual Coordinate Input Panel -->
+                <div
+                    class="absolute right-0 bottom-0 flex w-full justify-end p-4"
+                >
+                    <div
+                        v-if="showCoordinateInput"
+                        class="relative right-0 bottom-23 z-[500] w-full sm:w-sm"
+                    >
                         <div
-                            v-show="!hidePolygonCreation"
-                            class="space-y-4 p-4"
+                            class="overflow-hidden rounded-xl border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm"
                         >
-                            <!-- Polygon Name Input -->
-                            <div>
-                                <label
-                                    class="mb-2 block text-sm font-medium text-gray-700"
-                                >
-                                    Polygon Name (Optional)
-                                </label>
-                                <input
-                                    v-model="currentPolygonName"
-                                    type="text"
-                                    placeholder="e.g., Park Area, Building Zone..."
-                                    class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-200"
-                                />
-                            </div>
-
-                            <!-- Instructions -->
+                            <!-- Panel Header -->
                             <div
-                                class="rounded-lg border border-blue-200 bg-blue-50 p-3"
+                                class="border-b border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-4"
                             >
-                                <p class="text-sm text-blue-800">
-                                    <svg
-                                        class="mr-1 inline h-4 w-4"
-                                        fill="currentColor"
-                                        viewBox="0 0 20 20"
-                                    >
-                                        <path
-                                            fill-rule="evenodd"
-                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                            clip-rule="evenodd"
-                                        />
-                                    </svg>
-                                    Click on the map to add points. You need at
-                                    least 3 points to create a polygon.
-                                </p>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="flex gap-2">
-                                <button
-                                    @click="finishPolygon"
-                                    :disabled="currentPolygonPoints.length < 3"
-                                    :class="[
-                                        'flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
-                                        currentPolygonPoints.length >= 3
-                                            ? 'transform bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:scale-105'
-                                            : 'cursor-not-allowed bg-gray-100 text-gray-400',
-                                    ]"
-                                >
-                                    {{
-                                        currentPolygonPoints.length >= 3
-                                            ? '✓ Complete'
-                                            : `Need ${3 - currentPolygonPoints.length} more`
-                                    }}
-                                </button>
-
-                                <button
-                                    @click="cancelPolygon"
-                                    class="rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-
-                            <!-- Current Points List -->
-                            <div
-                                v-if="currentPolygonPoints.length > 0"
-                                class="max-h-32 overflow-y-auto"
-                            >
-                                <h4
-                                    class="mb-2 text-sm font-medium text-gray-700"
-                                >
-                                    Points:
-                                </h4>
-                                <div class="space-y-1">
-                                    <div
-                                        v-for="(
-                                            point, index
-                                        ) in currentPolygonPoints"
-                                        :key="index"
-                                        class="flex items-center justify-between rounded-lg bg-gray-50 p-2 text-xs"
-                                    >
-                                        <span class="font-medium text-gray-600"
-                                            >{{ index + 1 }}.</span
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div
+                                            class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100"
                                         >
-                                        <span class="font-mono text-gray-800"
-                                            >{{ point.lat.toFixed(4) }},
-                                            {{ point.lng.toFixed(4) }}</span
-                                        >
+                                            <svg
+                                                class="h-4 w-4 text-indigo-600"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3
+                                                class="text-lg font-semibold text-gray-900"
+                                            >
+                                                Manual Coordinates
+                                            </h3>
+                                            <p class="text-sm text-gray-600">
+                                                Enter precise coordinates
+                                            </p>
+                                        </div>
                                     </div>
+                                    <button
+                                        @click="
+                                            hideCoordinateInput =
+                                                !hideCoordinateInput
+                                        "
+                                        class="rounded-lg p-2 transition-colors hover:bg-indigo-100"
+                                    >
+                                        <ChevronUp
+                                            v-if="!hideCoordinateInput"
+                                            class="h-5 w-5 text-gray-500"
+                                        />
+                                        <ChevronDown
+                                            v-else
+                                            class="h-5 w-5 text-gray-500"
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Panel Content -->
+                            <div
+                                v-show="!hideCoordinateInput"
+                                class="space-y-4 p-4"
+                            >
+                                <div class="grid grid-cols-1 gap-3">
+                                    <div>
+                                        <label
+                                            class="mb-2 block text-sm font-medium text-gray-700"
+                                        >
+                                            Latitude
+                                        </label>
+                                        <input
+                                            v-model.number="manualInput.lat"
+                                            type="number"
+                                            step="any"
+                                            placeholder="51.505"
+                                            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200"
+                                        />
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Range: -90 to 90
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            class="mb-2 block text-sm font-medium text-gray-700"
+                                        >
+                                            Longitude
+                                        </label>
+                                        <input
+                                            v-model.number="manualInput.lng"
+                                            type="number"
+                                            step="any"
+                                            placeholder="-0.09"
+                                            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200"
+                                        />
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Range: -180 to 180
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button
+                                        @click="addPointFromInput"
+                                        :disabled="!isValidCoordinateInput"
+                                        :class="[
+                                            'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                                            isValidCoordinateInput
+                                                ? 'transform bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-sm hover:scale-105'
+                                                : 'cursor-not-allowed bg-gray-100 text-gray-400',
+                                        ]"
+                                    >
+                                        <svg
+                                            class="mr-1 inline h-3 w-3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                            />
+                                        </svg>
+                                        Add Point
+                                    </button>
+
+                                    <button
+                                        @click="clearManualInput"
+                                        class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+
+                                <div
+                                    v-if="manualInputError"
+                                    class="rounded-lg border border-red-200 bg-red-50 p-2"
+                                >
+                                    <p class="text-xs text-red-700">
+                                        {{ manualInputError }}
+                                    </p>
+                                </div>
+
+                                <!-- Instructions -->
+                                <div
+                                    class="rounded-lg border border-blue-200 bg-blue-50 p-3"
+                                >
+                                    <p class="text-xs text-blue-800">
+                                        <svg
+                                            class="mr-1 inline h-3 w-3"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                clip-rule="evenodd"
+                                            />
+                                        </svg>
+                                        Enter coordinates to add points to your
+                                        polygon. This will automatically enable
+                                        polygon mode.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -377,127 +600,6 @@
                     ref="mapContainer"
                     class="h-[500px] w-full bg-gray-100"
                 ></div>
-            </div>
-
-            <!-- Manual Coordinate Input -->
-            <div
-                class="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
-            >
-                <div
-                    class="border-b border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-6"
-                >
-                    <div class="flex items-center">
-                        <div
-                            class="mr-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100"
-                        >
-                            <svg
-                                class="h-5 w-5 text-indigo-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">
-                                Manual Coordinates
-                            </h3>
-                            <p class="text-sm text-gray-600">
-                                Enter precise latitude and longitude values
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-6">
-                    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div>
-                            <label
-                                class="mb-2 block text-sm font-medium text-gray-700"
-                            >
-                                Latitude
-                            </label>
-                            <input
-                                v-model.number="manualInput.lat"
-                                type="number"
-                                step="any"
-                                placeholder="51.505"
-                                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 transition-colors focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">
-                                Range: -90 to 90
-                            </p>
-                        </div>
-
-                        <div>
-                            <label
-                                class="mb-2 block text-sm font-medium text-gray-700"
-                            >
-                                Longitude
-                            </label>
-                            <input
-                                v-model.number="manualInput.lng"
-                                type="number"
-                                step="any"
-                                placeholder="-0.09"
-                                class="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 transition-colors focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200"
-                            />
-                            <p class="mt-1 text-xs text-gray-500">
-                                Range: -180 to 180
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <button
-                            @click="addPointFromInput"
-                            :disabled="!isValidCoordinateInput"
-                            :class="[
-                                'rounded-lg px-6 py-3 text-sm font-medium transition-all duration-200',
-                                isValidCoordinateInput
-                                    ? 'transform bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md hover:scale-105'
-                                    : 'cursor-not-allowed bg-gray-100 text-gray-400',
-                            ]"
-                        >
-                            <svg
-                                class="mr-2 inline h-4 w-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                />
-                            </svg>
-                            Add Point to Polygon
-                        </button>
-
-                        <button
-                            @click="clearManualInput"
-                            class="rounded-lg bg-gray-100 px-6 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-                        >
-                            Clear Input
-                        </button>
-                    </div>
-
-                    <div
-                        v-if="manualInputError"
-                        class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3"
-                    >
-                        <p class="text-sm text-red-700">
-                            {{ manualInputError }}
-                        </p>
-                    </div>
-                </div>
             </div>
 
             <!-- Polygons Display -->
@@ -565,8 +667,8 @@
                             No polygons created yet
                         </h4>
                         <p class="text-gray-600">
-                            Start by clicking "Draw Polygon" and adding points
-                            on the map
+                            Start by clicking "Draw Polygon" or "Enter
+                            Coordinates" and adding points
                         </p>
                     </div>
 
@@ -751,6 +853,8 @@ const currentLocationMarker = ref<L.Marker | null>(null);
 const currentLocationCircle = ref<L.Circle | null>(null);
 const hidePolygonCreation = ref(false);
 const isSaving = ref(false);
+const showCoordinateInput = ref(false);
+const hideCoordinateInput = ref(false);
 
 // Polygon creation
 const currentPolygonPoints = ref<PolygonPoint[]>([]);
@@ -1063,6 +1167,7 @@ const addPointFromInput = () => {
     const latlng = L.latLng(manualInput.value.lat!, manualInput.value.lng!);
     addPolygonPoint(latlng);
     clearManualInput();
+    map.value?.setView(latlng, map.value.getZoom());
 };
 
 // Finish polygon creation
@@ -1257,6 +1362,16 @@ const toggleMarkerMode = () => {
     isMarkerMode.value = !isMarkerMode.value;
     if (isMarkerMode.value) {
         cancelPolygon();
+    }
+};
+const toggleCoordinateInput = () => {
+    showCoordinateInput.value = !showCoordinateInput.value;
+    if (!showCoordinateInput.value) {
+        // When hiding coordinate input, clear any input and errors
+        clearManualInput();
+    } else {
+        hideCoordinateInput.value = false;
+        hidePolygonCreation.value = true;
     }
 };
 
