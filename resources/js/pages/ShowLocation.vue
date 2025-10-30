@@ -109,7 +109,7 @@
                                 isTrackingLocation
                                     ? 'bg-red-600 text-white hover:bg-red-700'
                                     : 'bg-blue-600 text-white hover:bg-blue-700',
-                                isGettingLocation
+                                isGettingLocation && !isTrackingLocation
                                     ? 'cursor-not-allowed opacity-50'
                                     : '',
                             ]"
@@ -364,8 +364,8 @@
                     ]"
                     class="absolute top-0 left-0 z-[500] flex h-full w-full items-center justify-center rounded-lg"
                 >
-                    <p v-show="!isTrackingLocation" class="text-white">
-                        Start tracking to reveal your location
+                    <p v-show="!isTrackingLocation" class="text-white text-center">
+                        Start <b>tracking</b> to reveal your location
                     </p>
                 </div>
             </div>
@@ -684,10 +684,10 @@ const followUser = () => {
 
     if (!map.value || !currentLocation.value) return;
 
-    // Zoom in on user location with nice zoom level
+    // Zoom in on user location with very high zoom level for close tracking
     map.value.setView(
         [currentLocation.value.lat, currentLocation.value.lng],
-        18, // Nice zoom level for following user
+        20, // Maximum zoom level for very close tracking (1-2 meter precision)
         {
             animate: true,
             duration: 1,
@@ -703,10 +703,10 @@ const updateCameraView = () => {
         // Delay camera update slightly to prevent interference with line updates
         setTimeout(() => {
             if (map.value && currentLocation.value && isFollowingUser.value) {
-                // Follow user mode - keep camera centered on user
+                // Follow user mode - keep camera centered on user with high zoom
                 map.value.setView(
                     [currentLocation.value.lat, currentLocation.value.lng],
-                    map.value.getZoom() < 16 ? 18 : map.value.getZoom(), // Maintain good zoom or set to 18
+                    map.value.getZoom() < 19 ? 20 : map.value.getZoom(), // Maintain very high zoom or set to 20
                     {
                         animate: true,
                         duration: 0.3, // Shorter duration for smoother updates
@@ -843,8 +843,9 @@ const getCurrentLocation = () => {
         alert('Geolocation is not supported by this browser.');
         return;
     }
-
-    isGettingLocation.value = true;
+    if (!isTrackingLocation.value) {
+        isGettingLocation.value = true;
+    }
 
     navigator.geolocation.getCurrentPosition(
         (position) => {
