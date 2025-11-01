@@ -364,7 +364,10 @@
                     ]"
                     class="absolute top-0 left-0 z-[500] flex h-full w-full items-center justify-center rounded-lg"
                 >
-                    <p v-show="!isTrackingLocation" class="text-white text-center">
+                    <p
+                        v-show="!isTrackingLocation"
+                        class="text-center text-white"
+                    >
                         Start <b>tracking</b> to reveal your location
                     </p>
                 </div>
@@ -595,6 +598,8 @@ const resetToInitialState = () => {
     // Reset UI states
     isOverviewActive.value = false;
     isFollowingUser.value = false;
+    isFreeRoamActive.value = false;
+    isTrackingLocation.value = false;
     showConnectionLine.value = false;
 
     // Remove location markers from map
@@ -951,7 +956,6 @@ const toggleLocationTracking = () => {
             trackingInterval.value = null;
             currentCameraMode.value = '';
         }
-        isTrackingLocation.value = false;
 
         // Reset to initial state when stopping
         resetToInitialState();

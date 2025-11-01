@@ -221,4 +221,10 @@
     body {
         @apply bg-background text-foreground;
     }
+    .leaflet-control-zoom a{
+        @apply !bg-white/90 !backdrop-blur-md;
+    }
+    .leaflet-top {
+        @apply !z-[501]
+    }
 }
