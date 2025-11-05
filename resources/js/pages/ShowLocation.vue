@@ -49,9 +49,9 @@
                 <div
                     class="rounded-lg border-2 border-white bg-white/80 p-6 shadow-lg backdrop-blur-sm"
                     :class="
-                        isTrackingLocation && isInside
+                        isTrackingLocation && isInsideOrNearAnyShape
                             ? '!border-green-500'
-                            : isTrackingLocation && !isInside
+                            : isTrackingLocation && !isInsideOrNearAnyShape
                               ? '!border-red-500'
                               : ''
                     "
@@ -68,7 +68,7 @@
                                     <div
                                         :class="[
                                             'mr-2 h-3 w-3 rounded-full',
-                                            isInside
+                                            isInsideOrNearAnyShape
                                                 ? 'bg-green-400'
                                                 : 'bg-red-400',
                                         ]"
@@ -76,15 +76,15 @@
                                     <span
                                         :class="[
                                             'text-sm font-medium',
-                                            isInside
+                                            isInsideOrNearAnyShape
                                                 ? 'text-green-800'
                                                 : 'text-red-800',
                                         ]"
                                     >
                                         {{
-                                            isInside
-                                                ? 'Inside Area'
-                                                : 'Outside Area'
+                                            isInsideOrNearAnyShape
+                                                ? `Inside/Near: ${insideShapeNames.join(', ')}`
+                                                : 'Outside All Areas'
                                         }}
                                     </span>
                                 </div>
@@ -94,10 +94,12 @@
                                     Last updated: {{ lastUpdated }}
                                 </div>
                                 <div
-                                    v-if="distanceToCenter !== null"
+                                    v-if="distanceToNearestShape !== null"
                                     class="text-xs text-gray-500 sm:text-sm"
                                 >
-                                    Distance: {{ distanceToCenter.toFixed(0) }}m
+                                    Nearest:
+                                    {{ distanceToNearestShape.toFixed(0) }}m to
+                                    {{ nearestShapeName }}
                                 </div>
                             </div>
                         </div>
@@ -122,6 +124,118 @@
                                       : 'Start Tracking'
                             }}
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shape Info Panel -->
+            <div v-if="location.data.shapes" class="mb-5 w-full">
+                <div
+                    class="rounded-lg border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur-sm"
+                >
+                    <h3 class="mb-2 text-sm font-semibold text-gray-900">
+                        Collection: {{ location.name }}
+                    </h3>
+                    <div
+                        class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3"
+                    >
+                        <div
+                            v-for="(shape, index) in location.data.shapes"
+                            :key="index"
+                            :class="[
+                                'flex items-center rounded-md p-2 text-xs transition-all duration-200',
+                                shape.type === 'polygon'
+                                    ? 'bg-blue-50 text-blue-800'
+                                    : 'bg-green-50 text-green-800',
+                                isInsideShape(shape) ||
+                                (shape.type === 'line' &&
+                                    currentLocation &&
+                                    distanceToLine(
+                                        currentLocation,
+                                        shape.points,
+                                    ) <= 5)
+                                    ? 'bg-green-100 ring-2 ring-green-400'
+                                    : '',
+                            ]"
+                        >
+                            <svg
+                                class="mr-2 h-3 w-3 flex-shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    v-if="shape.type === 'polygon'"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2l6 3 5.447-2.724A1 1 0 0121 3.382v10.764a1 1 0 01-.553.894L15 18l-6-3z"
+                                />
+                                <path
+                                    v-else
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                            </svg>
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate font-medium">
+                                    {{ shape.name }}
+                                </div>
+                                <div class="text-xs opacity-75">
+                                    {{
+                                        shape.type === 'polygon'
+                                            ? `${shape.area_km2?.toFixed(2)} km²`
+                                            : `${shape.length_km?.toFixed(2)} km`
+                                    }}
+                                </div>
+                            </div>
+                            <!-- Navigation Button -->
+                            <button
+                                @click="navigateToShape(shape)"
+                                class="ml-2 cursor-pointer rounded-md border-2 bg-white/80 p-1 text-gray-600 shadow-xs transition transition-colors duration-200 hover:scale-110 hover:bg-white hover:text-gray-800 hover:opacity-65 hover:shadow-md"
+                                title="Navigate to this shape"
+                            >
+                                <svg
+                                    class="h-3 w-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                    />
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                </svg>
+                            </button>
+                            <!-- Status indicator -->
+                            <div
+                                v-if="
+                                    isInsideShape(shape) ||
+                                    (shape.type === 'line' &&
+                                        currentLocation &&
+                                        distanceToLine(
+                                            currentLocation,
+                                            shape.points,
+                                        ) <= 5)
+                                "
+                                class="ml-1 h-2 w-2 rounded-full bg-green-400"
+                                :title="
+                                    shape.type === 'polygon'
+                                        ? 'You are inside this shape'
+                                        : 'You are near this line'
+                                "
+                            ></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -250,7 +364,9 @@
                                     d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                                 />
                             </svg>
-                            {{ showConnectionLine ? 'Hide Line' : 'Show Line' }}
+                            {{
+                                showConnectionLine ? 'Hide Lines' : 'Show Lines'
+                            }}
                         </button>
                     </div>
                     <!-- Free Roam -->
@@ -398,24 +514,41 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Props
+// Updated Props interface
 const props = defineProps<{
     error: string | null;
     location: {
         id: string;
         name: string;
         data: {
-            type: string;
-            points: Array<{ lat: number; lng: number }>;
-            coordinates: number[][];
-            bounds: {
+            format?: string;
+            // New multi-shape format
+            shapes?: Array<{
+                name: string;
+                type: 'line' | 'polygon';
+                points: Array<{ lat: number; lng: number }>;
+                coordinates: number[][];
+                bounds: {
+                    north: number;
+                    south: number;
+                    east: number;
+                    west: number;
+                };
+                area_km2?: number;
+                length_km?: number;
+            }>;
+            bounds?: {
                 north: number;
                 south: number;
                 east: number;
                 west: number;
             };
+            metadata?: any;
+            // Old single polygon format (for backward compatibility)
+            type?: string;
+            points?: Array<{ lat: number; lng: number }>;
+            coordinates?: number[][];
             area_km2?: number;
-            metadata: any;
         };
         share_code: string;
     } | null;
@@ -457,12 +590,14 @@ const availableTiles = [
 const mapContainer = ref<HTMLElement>();
 const map = ref<L.Map | null>(null);
 const currentTileLayerRef = ref<L.TileLayer | null>(null);
-const polygon = ref<L.Polygon | null>(null);
-const polygonCenter = ref<{ lat: number; lng: number } | null>(null);
-const polygonCenterMarker = ref<L.Marker | null>(null);
+const shapeElements = ref<Array<{ shape: L.Polygon | L.Polyline; data: any }>>(
+    [],
+);
+const shapeCenters = ref<Array<{ lat: number; lng: number; name: string }>>([]);
+const shapeCenterMarkers = ref<L.Marker[]>([]);
 const currentLocationMarker = ref<L.Marker | null>(null);
 const currentLocationCircle = ref<L.Circle | null>(null);
-const connectionLine = ref<L.Polyline | null>(null);
+const connectionLines = ref<L.Polyline[]>([]);
 const currentLocation = ref<{
     lat: number;
     lng: number;
@@ -482,16 +617,340 @@ const isFollowingUser = ref(false);
 const isFreeRoamActive = ref(false);
 const currentCameraMode = ref<'overview' | 'follow' | 'free-roam' | ''>('');
 
-// Computed
-const isInside = computed(() => {
-    if (!currentLocation.value || !props.location?.data.points) return false;
-    return isPointInPolygon(currentLocation.value, props.location.data.points);
+const movementStatus = computed(() => {
+    if (!locationState.value.lastMovementTime) return 'No movement detected';
+
+    if (locationState.value.isMoving) {
+        const speed = (locationState.value.movementSpeed * 3.6).toFixed(1); // Convert to km/h
+        return `Moving at ${speed} km/h`;
+    }
+
+    const timeSinceMovement = Math.round(
+        (new Date().getTime() -
+            locationState.value.lastMovementTime.getTime()) /
+            1000,
+    );
+
+    if (timeSinceMovement < 60) {
+        return `Stopped ${timeSinceMovement}s ago`;
+    } else {
+        return `Stopped ${Math.round(timeSinceMovement / 60)}m ago`;
+    }
+});
+// function to calculate distance from point to line
+const distanceToLine = (
+    point: { lat: number; lng: number },
+    linePoints: Array<{ lat: number; lng: number }>,
+): number => {
+    if (linePoints.length < 2) return Infinity;
+
+    let minDistance = Infinity;
+
+    // Check distance to each line segment
+    for (let i = 0; i < linePoints.length - 1; i++) {
+        const segmentStart = linePoints[i];
+        const segmentEnd = linePoints[i + 1];
+        const distance = distanceToLineSegment(point, segmentStart, segmentEnd);
+        minDistance = Math.min(minDistance, distance);
+    }
+
+    return minDistance;
+};
+// Enhanced tracking configuration for mobile precision
+const trackingConfig = {
+    // High precision settings for step-by-step tracking
+    enableHighAccuracy: true,
+    timeout: 15000, // Increased timeout for better accuracy
+    maximumAge: 0, // Always get fresh location
+
+    // Tracking intervals (milliseconds)
+    highPrecisionInterval: 2000, // 2 seconds for active following
+
+    // Movement detection
+    minimumMovementDistance: 0.5, // 0.5 meters minimum movement to update
+    significantMovementDistance: 2, // 2 meters for significant movement
+
+    // Zoom levels for different modes
+    walkingZoom: 21, // Maximum zoom for walking precision
+    followingZoom: 20, // High zoom for following mode
+    overviewZoom: 16, // Lower zoom for overview
+};
+
+// Enhanced location state
+const locationState = ref({
+    isMoving: false,
+    lastMovementTime: null as Date | null,
+    movementSpeed: 0, // meters per second
+    heading: null as number | null,
+    lastPosition: null as {
+        lat: number;
+        lng: number;
+        timestamp: number;
+    } | null,
+    accuracy: null as number | null,
+    isHighAccuracy: false,
+});
+// Movement detection
+const detectMovement = (newLocation: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+}) => {
+    const now = new Date();
+
+    if (locationState.value.lastPosition) {
+        const distance = calculateDistance(
+            locationState.value.lastPosition,
+            newLocation,
+        );
+
+        const timeDiff =
+            (now.getTime() - locationState.value.lastPosition.timestamp) / 1000; // seconds
+        const speed = distance / timeDiff; // meters per second
+
+        locationState.value.movementSpeed = speed;
+
+        // Consider moving if distance > minimum threshold or speed indicates movement
+        locationState.value.isMoving =
+            distance > trackingConfig.minimumMovementDistance || speed > 0.1; // 0.1 m/s = very slow walking
+
+        if (locationState.value.isMoving) {
+            locationState.value.lastMovementTime = now;
+        }
+
+        // Calculate heading if moving significantly
+        if (distance > trackingConfig.significantMovementDistance) {
+            locationState.value.heading = calculateBearing(
+                locationState.value.lastPosition,
+                newLocation,
+            );
+        }
+    }
+
+    // Update last position
+    locationState.value.lastPosition = {
+        lat: newLocation.lat,
+        lng: newLocation.lng,
+        timestamp: now.getTime(),
+    };
+
+    locationState.value.accuracy = newLocation.accuracy || null;
+    locationState.value.isHighAccuracy = (newLocation.accuracy || 100) < 10; // Consider high accuracy if < 10m
+};
+
+// Calculate bearing between two points
+const calculateBearing = (
+    point1: { lat: number; lng: number },
+    point2: { lat: number; lng: number },
+): number => {
+    const lat1 = (point1.lat * Math.PI) / 180;
+    const lat2 = (point2.lat * Math.PI) / 180;
+    const deltaLng = ((point2.lng - point1.lng) * Math.PI) / 180;
+
+    const x = Math.sin(deltaLng) * Math.cos(lat2);
+    const y =
+        Math.cos(lat1) * Math.sin(lat2) -
+        Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+
+    const bearing = Math.atan2(x, y);
+    return ((bearing * 180) / Math.PI + 360) % 360; // Convert to degrees and normalize
+};
+// Calculate distance from point to line segment
+const distanceToLineSegment = (
+    point: { lat: number; lng: number },
+    lineStart: { lat: number; lng: number },
+    lineEnd: { lat: number; lng: number },
+): number => {
+    const R = 6371e3; // Earth's radius in meters
+
+    // Convert to radians
+    const lat1 = (point.lat * Math.PI) / 180;
+    const lng1 = (point.lng * Math.PI) / 180;
+    const lat2 = (lineStart.lat * Math.PI) / 180;
+    const lng2 = (lineStart.lng * Math.PI) / 180;
+    const lat3 = (lineEnd.lat * Math.PI) / 180;
+    const lng3 = (lineEnd.lng * Math.PI) / 180;
+
+    // Calculate vectors
+    const dLat21 = lat2 - lat1;
+    const dLng21 = lng2 - lng1;
+    const dLat32 = lat3 - lat2;
+    const dLng32 = lng3 - lng2;
+    const dLat31 = lat3 - lat1;
+    const dLng31 = lng3 - lng1;
+
+    // Calculate cross product and dot products
+    const cross = dLat21 * dLng32 - dLng21 * dLat32;
+    const dot1 = dLat21 * dLat32 + dLng21 * dLng32;
+    const dot2 = dLat31 * dLat32 + dLng31 * dLng32;
+
+    // Find closest point on line segment
+    if (dot2 <= 0) {
+        // Closest to end point
+        return calculateDistance(point, lineEnd);
+    } else if (dot1 >= 0) {
+        // Closest to start point
+        return calculateDistance(point, lineStart);
+    } else {
+        // Closest to some point on the line segment
+        const segmentLength = Math.sqrt(dLat32 * dLat32 + dLng32 * dLng32);
+        return (Math.abs(cross) * R) / segmentLength;
+    }
+};
+// Helper function to get shapes data
+const getShapesData = () => {
+    if (!props.location) return [];
+
+    if (props.location.data.shapes) {
+        // New multi-shape format
+        return props.location.data.shapes;
+    } else if (props.location.data.points) {
+        // Old single polygon format - convert to new format
+        return [
+            {
+                name: props.location.name,
+                type: 'polygon' as const,
+                points: props.location.data.points,
+                coordinates: props.location.data.coordinates || [],
+                bounds: props.location.data.bounds || {
+                    north: Math.max(
+                        ...props.location.data.points.map((p) => p.lat),
+                    ),
+                    south: Math.min(
+                        ...props.location.data.points.map((p) => p.lat),
+                    ),
+                    east: Math.max(
+                        ...props.location.data.points.map((p) => p.lng),
+                    ),
+                    west: Math.min(
+                        ...props.location.data.points.map((p) => p.lng),
+                    ),
+                },
+                area_km2: props.location.data.area_km2,
+            },
+        ];
+    }
+
+    return [];
+};
+
+// Computed properties for multi-shape support
+const isInsideOrNearAnyShape = computed(() => {
+    if (!currentLocation.value) return false;
+
+    const shapes = getShapesData();
+    return shapes.some((shape) => {
+        if (shape.type === 'polygon') {
+            return isPointInPolygon(currentLocation.value!, shape.points);
+        } else if (shape.type === 'line') {
+            const distance = distanceToLine(
+                currentLocation.value!,
+                shape.points,
+            );
+            return distance <= 5; // 5 meters
+        }
+        return false;
+    });
 });
 
-const distanceToCenter = computed(() => {
-    if (!currentLocation.value || !polygonCenter.value) return null;
-    return calculateDistance(currentLocation.value, polygonCenter.value);
+const insideShapeNames = computed(() => {
+    if (!currentLocation.value) return [];
+
+    const shapes = getShapesData();
+    const result: string[] = [];
+
+    shapes.forEach((shape) => {
+        if (
+            shape.type === 'polygon' &&
+            isPointInPolygon(currentLocation.value!, shape.points)
+        ) {
+            result.push(shape.name);
+        } else if (shape.type === 'line') {
+            const distance = distanceToLine(
+                currentLocation.value!,
+                shape.points,
+            );
+            if (distance <= 5) {
+                result.push(`${shape.name} (${distance.toFixed(1)}m)`);
+            }
+        }
+    });
+
+    return result;
 });
+
+// Function to navigate to specific shape
+const navigateToShape = (shape: any) => {
+    if (!map.value) return;
+
+    const center = calculateShapeCenter(shape.points);
+
+    // Set appropriate zoom level based on shape type and size
+    let zoomLevel = 16;
+    if (shape.type === 'polygon' && shape.area_km2) {
+        // Adjust zoom based on area size
+        if (shape.area_km2 > 1) zoomLevel = 14;
+        else if (shape.area_km2 > 0.1) zoomLevel = 15;
+        else zoomLevel = 17;
+    } else if (shape.type === 'line' && shape.length_km) {
+        // Adjust zoom based on line length
+        if (shape.length_km > 5) zoomLevel = 13;
+        else if (shape.length_km > 1) zoomLevel = 15;
+        else zoomLevel = 17;
+    }
+
+    map.value.setView([center.lat, center.lng], zoomLevel, {
+        animate: true,
+        duration: 1,
+    });
+
+    // Disable auto-follow modes
+    isFollowingUser.value = false;
+    isOverviewActive.value = false;
+    isFreeRoamActive.value = true;
+    currentCameraMode.value = 'free-roam';
+};
+const distanceToNearestShape = computed(() => {
+    if (!currentLocation.value) return null;
+
+    const shapes = getShapesData();
+    let minDistance = Infinity;
+
+    shapes.forEach((shape) => {
+        const center = calculateShapeCenter(shape.points);
+        const distance = calculateDistance(currentLocation.value!, center);
+        if (distance < minDistance) {
+            minDistance = distance;
+        }
+    });
+
+    return minDistance === Infinity ? null : minDistance;
+});
+
+const nearestShapeName = computed(() => {
+    if (!currentLocation.value) return '';
+
+    const shapes = getShapesData();
+    let minDistance = Infinity;
+    let nearestName = '';
+
+    shapes.forEach((shape) => {
+        const center = calculateShapeCenter(shape.points);
+        const distance = calculateDistance(currentLocation.value!, center);
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestName = shape.name;
+        }
+    });
+
+    return nearestName;
+});
+
+// Check if user is inside a specific shape
+const isInsideShape = (shape: any) => {
+    if (!currentLocation.value || shape.type !== 'polygon') return false;
+    return isPointInPolygon(currentLocation.value, shape.points);
+};
 
 // Calculate distance between two points in meters
 const calculateDistance = (
@@ -512,8 +971,8 @@ const calculateDistance = (
     return R * c;
 };
 
-// Calculate polygon center
-const calculatePolygonCenter = (
+// Calculate shape center (works for both polygons and lines)
+const calculateShapeCenter = (
     points: Array<{ lat: number; lng: number }>,
 ): { lat: number; lng: number } => {
     const latSum = points.reduce((sum, point) => sum + point.lat, 0);
@@ -551,8 +1010,8 @@ const isPointInPolygon = (
 
     return inside;
 };
-// Toggle free roam
 
+// Toggle free roam
 const toggleFreeRoam = () => {
     isFreeRoamActive.value = !isFreeRoamActive.value;
     if (isFreeRoamActive.value) {
@@ -563,6 +1022,7 @@ const toggleFreeRoam = () => {
         showOverview();
     }
 };
+
 // Tile layer functions
 const toggleTileSelector = () => {
     showTileSelector.value = !showTileSelector.value;
@@ -588,7 +1048,39 @@ const selectTile = (tile: (typeof availableTiles)[0]) => {
     currentTileLayer.value = tile;
     showTileSelector.value = false;
 };
+// Update the shape color logic in initMap function
+const updateShapeColors = () => {
+    if (!currentLocation.value) return;
 
+    shapeElements.value.forEach(({ shape, data }) => {
+        let isActive = false;
+
+        if (data.type === 'polygon') {
+            isActive = isPointInPolygon(currentLocation.value!, data.points);
+        } else if (data.type === 'line') {
+            const distance = distanceToLine(
+                currentLocation.value!,
+                data.points,
+            );
+            isActive = distance <= 5;
+        }
+
+        // Update shape color
+        if (data.type === 'polygon') {
+            (shape as L.Polygon).setStyle({
+                color: isActive ? 'green' : 'blue',
+                weight: 2,
+                fillOpacity: isActive ? 0.3 : 0.2,
+            });
+        } else {
+            (shape as L.Polyline).setStyle({
+                color: isActive ? 'green' : 'red',
+                weight: isActive ? 4 : 3,
+                opacity: isActive ? 1 : 0.8,
+            });
+        }
+    });
+};
 // Reset to initial state
 const resetToInitialState = () => {
     // Clear current location data
@@ -612,10 +1104,12 @@ const resetToInitialState = () => {
             map.value.removeLayer(currentLocationCircle.value);
             currentLocationCircle.value = null;
         }
-        if (connectionLine.value) {
-            map.value.removeLayer(connectionLine.value);
-            connectionLine.value = null;
-        }
+        connectionLines.value.forEach((line) => {
+            if (map.value) {
+                map.value.removeLayer(line);
+            }
+        });
+        connectionLines.value = [];
 
         // Remove any distance popups
         map.value.eachLayer((layer) => {
@@ -627,13 +1121,23 @@ const resetToInitialState = () => {
             }
         });
 
-        // Fit map back to polygon bounds (initial state)
-        if (polygon.value) {
-            map.value.fitBounds(polygon.value.getBounds(), {
-                padding: [20, 20],
-                animate: true,
-                duration: 0.8,
+        // Fit map back to all shapes bounds (initial state)
+        const shapes = getShapesData();
+        if (shapes.length > 0) {
+            const allBounds = L.latLngBounds([]);
+            shapes.forEach((shape) => {
+                shape.points.forEach((point) => {
+                    allBounds.extend([point.lat, point.lng]);
+                });
             });
+
+            if (allBounds.isValid()) {
+                map.value.fitBounds(allBounds, {
+                    padding: [20, 20],
+                    animate: true,
+                    duration: 0.8,
+                });
+            }
         }
     }
 };
@@ -651,25 +1155,29 @@ const showOverview = () => {
 
     if (!map.value) return;
 
-    if (currentLocation.value && polygonCenter.value) {
-        const bounds = L.latLngBounds([
-            [currentLocation.value.lat, currentLocation.value.lng],
-            [polygonCenter.value.lat, polygonCenter.value.lng],
-        ]);
+    const bounds = L.latLngBounds([]);
 
-        // Extend bounds to include the polygon
-        if (polygon.value) {
-            bounds.extend(polygon.value.getBounds());
-        }
+    // Include current location if available
+    if (currentLocation.value) {
+        bounds.extend([currentLocation.value.lat, currentLocation.value.lng]);
+    }
 
+    // Include all shape centers
+    shapeCenters.value.forEach((center) => {
+        bounds.extend([center.lat, center.lng]);
+    });
+
+    // Include all shape points
+    const shapes = getShapesData();
+    shapes.forEach((shape) => {
+        shape.points.forEach((point) => {
+            bounds.extend([point.lat, point.lng]);
+        });
+    });
+
+    if (bounds.isValid()) {
         map.value.fitBounds(bounds, {
             padding: [50, 50],
-            animate: true,
-            duration: 0.8,
-        });
-    } else if (polygon.value) {
-        map.value.fitBounds(polygon.value.getBounds(), {
-            padding: [20, 20],
             animate: true,
             duration: 0.8,
         });
@@ -680,22 +1188,23 @@ const showOverview = () => {
 const followUser = () => {
     if (!map.value || !currentLocation.value) return;
 
-    // Set follow as active FIRST for immediate visual feedback
+    // Set follow as active
     isFollowingUser.value = true;
     isOverviewActive.value = false;
     isFreeRoamActive.value = false;
-
     currentCameraMode.value = 'follow';
 
-    if (!map.value || !currentLocation.value) return;
+    // Immediate high-precision zoom
+    const zoomLevel = locationState.value.isMoving
+        ? trackingConfig.walkingZoom
+        : trackingConfig.followingZoom;
 
-    // Zoom in on user location with very high zoom level for close tracking
     map.value.setView(
         [currentLocation.value.lat, currentLocation.value.lng],
-        20, // Maximum zoom level for very close tracking (1-2 meter precision)
+        zoomLevel,
         {
             animate: true,
-            duration: 1,
+            duration: 0.8,
         },
     );
 };
@@ -704,40 +1213,59 @@ const followUser = () => {
 const updateCameraView = () => {
     if (!map.value || !currentLocation.value) return;
 
-    if (isFollowingUser.value) {
-        // Delay camera update slightly to prevent interference with line updates
-        setTimeout(() => {
-            if (map.value && currentLocation.value && isFollowingUser.value) {
-                // Follow user mode - keep camera centered on user with high zoom
-                map.value.setView(
-                    [currentLocation.value.lat, currentLocation.value.lng],
-                    map.value.getZoom() < 19 ? 20 : map.value.getZoom(), // Maintain very high zoom or set to 20
-                    {
-                        animate: true,
-                        duration: 0.3, // Shorter duration for smoother updates
-                    },
-                );
-            }
-        }, 50);
+    // Don't move camera if in free-roam mode
+    if (isFreeRoamActive.value || currentCameraMode.value === 'free-roam') {
+        return;
     }
-    // Overview mode is handled manually when button is clicked
+
+    if (isFollowingUser.value) {
+        // Determine zoom level based on movement and accuracy
+        let targetZoom = trackingConfig.followingZoom;
+
+        if (locationState.value.isMoving) {
+            // Higher zoom when moving for better precision
+            targetZoom = trackingConfig.walkingZoom;
+        } else if (locationState.value.isHighAccuracy) {
+            // High zoom for high accuracy GPS
+            targetZoom = trackingConfig.walkingZoom;
+        }
+
+        // Smooth camera following with movement prediction
+        const animationDuration = locationState.value.isMoving ? 0.2 : 0.5;
+
+        // Use setView with smooth animation
+        map.value.setView(
+            [currentLocation.value.lat, currentLocation.value.lng],
+            Math.max(targetZoom, map.value.getZoom()), // Don't zoom out automatically
+            {
+                animate: true,
+                duration: animationDuration,
+                easeLinearity: 0.1, // Smoother animation
+            },
+        );
+
+        // Optional: Rotate map based on movement heading (uncomment if desired)
+        if (currentLocation.value.heading && locationState.value.isMoving) {
+            map.value.setBearing(currentLocation.value.heading);
+        }
+    }
 };
 
 // Toggle connection line
 const toggleConnectionLine = () => {
     showConnectionLine.value = !showConnectionLine.value;
-    updateConnectionLine();
+    updateConnectionLines();
 };
 
-// Update connection line
-const updateConnectionLine = () => {
+// Update connection lines
+const updateConnectionLines = () => {
     if (!map.value) return;
 
-    // Remove existing line and popup
-    if (connectionLine.value) {
-        map.value.removeLayer(connectionLine.value);
-        connectionLine.value = null;
-    }
+    // Remove existing lines
+    connectionLines.value.forEach((line) => {
+        map.value!.removeLayer(line);
+    });
+    connectionLines.value = [];
 
     // Remove any existing distance popup
     map.value.eachLayer((layer) => {
@@ -749,24 +1277,24 @@ const updateConnectionLine = () => {
         }
     });
 
-    // Add new line if enabled and both points exist
-    if (
-        showConnectionLine.value &&
-        currentLocation.value &&
-        polygonCenter.value
-    ) {
-        connectionLine.value = L.polyline(
-            [
-                [currentLocation.value.lat, currentLocation.value.lng],
-                [polygonCenter.value.lat, polygonCenter.value.lng],
-            ],
-            {
-                color: isInside.value ? 'green' : 'red',
-                weight: 2,
-                dashArray: '5, 5',
-                opacity: 0.7,
-            },
-        ).addTo(map.value);
+    // Add new lines if enabled and current location exists
+    if (showConnectionLine.value && currentLocation.value) {
+        shapeCenters.value.forEach((center) => {
+            const line = L.polyline(
+                [
+                    [currentLocation.value!.lat, currentLocation.value!.lng],
+                    [center.lat, center.lng],
+                ],
+                {
+                    color: isInsideOrNearAnyShape.value ? 'green' : 'red',
+                    weight: 2,
+                    dashArray: '5, 5',
+                    opacity: 0.7,
+                },
+            ).addTo(map.value!);
+
+            connectionLines.value.push(line);
+        });
     }
 };
 
@@ -781,59 +1309,102 @@ const initMap = () => {
         attribution: currentTileLayer.value.attribution,
     }).addTo(map.value);
 
-    // Calculate polygon center
-    polygonCenter.value = calculatePolygonCenter(props.location.data.points);
+    const shapes = getShapesData();
+    if (shapes.length === 0) return;
 
-    // polygon center marker
-    if (polygonCenter.value) {
-        polygonCenterMarker.value = L.marker(
-            [polygonCenter.value.lat, polygonCenter.value.lng],
-            {
-                icon: L.icon({
-                    iconUrl: markerIcon,
-                    iconRetinaUrl: markerRetina,
-                    shadowUrl: markerShadow,
-                    iconSize: [20, 32],
-                    iconAnchor: [10, 32],
-                    popupAnchor: [1, -30],
-                    shadowSize: [32, 32],
-                }),
-            },
-        ).addTo(map.value);
+    // Process each shape
+    shapes.forEach((shapeData, index) => {
+        // Calculate shape center
+        const center = calculateShapeCenter(shapeData.points);
+        shapeCenters.value.push({
+            lat: center.lat,
+            lng: center.lng,
+            name: shapeData.name,
+        });
 
-        polygonCenterMarker.value.bindPopup(`
+        // Add center marker
+        const centerMarker = L.marker([center.lat, center.lng], {
+            icon: L.icon({
+                iconUrl: markerIcon,
+                iconRetinaUrl: markerRetina,
+                shadowUrl: markerShadow,
+                iconSize: [20, 32],
+                iconAnchor: [10, 32],
+                popupAnchor: [1, -30],
+                shadowSize: [32, 32],
+            }),
+        }).addTo(map.value!);
+
+        centerMarker.bindPopup(`
             <div>
-                <strong>Area Center</strong><br>
-                ${props.location.name}<br>
-                Lat: ${polygonCenter.value.lat.toFixed(6)}<br>
-                Lng: ${polygonCenter.value.lng.toFixed(6)}
+                <strong>${shapeData.name}</strong><br>
+                Type: ${shapeData.type}<br>
+                ${
+                    shapeData.type === 'polygon'
+                        ? `Area: ${shapeData.area_km2?.toFixed(2) || 'Unknown'} km²`
+                        : `Length: ${shapeData.length_km?.toFixed(2) || 'Unknown'} km`
+                }<br>
+                Points: ${shapeData.points.length}<br>
+                Lat: ${center.lat.toFixed(6)}<br>
+                Lng: ${center.lng.toFixed(6)}
             </div>
         `);
+
+        shapeCenterMarkers.value.push(centerMarker);
+
+        // Create shape on map
+        const shapeCoords = shapeData.points.map(
+            (point) => [point.lat, point.lng] as [number, number],
+        );
+
+        let shapeElement: L.Polygon | L.Polyline;
+
+        if (shapeData.type === 'polygon') {
+            shapeElement = L.polygon(shapeCoords, {
+                color: 'blue',
+                weight: 2,
+                fillOpacity: 0.2,
+            }).addTo(map.value!);
+        } else {
+            shapeElement = L.polyline(shapeCoords, {
+                color: 'green',
+                weight: 3,
+                opacity: 0.8,
+            }).addTo(map.value!);
+        }
+
+        shapeElement.bindPopup(`
+            <div>
+                <strong>${shapeData.name}</strong><br>
+                Type: ${shapeData.type}<br>
+                ${
+                    shapeData.type === 'polygon'
+                        ? `Area: ${shapeData.area_km2?.toFixed(2) || 'Unknown'} km²`
+                        : `Length: ${shapeData.length_km?.toFixed(2) || 'Unknown'} km`
+                }<br>
+                Points: ${shapeData.points.length}
+            </div>
+        `);
+
+        shapeElements.value.push({
+            shape: shapeElement,
+            data: shapeData,
+        });
+    });
+
+    // Fit map to all shapes bounds initially
+    const allBounds = L.latLngBounds([]);
+    shapes.forEach((shape) => {
+        shape.points.forEach((point) => {
+            allBounds.extend([point.lat, point.lng]);
+        });
+    });
+
+    if (allBounds.isValid()) {
+        map.value.fitBounds(allBounds);
     }
 
-    // polygon
-    const polygonCoords = props.location.data.points.map(
-        (point) => [point.lat, point.lng] as [number, number],
-    );
-
-    polygon.value = L.polygon(polygonCoords, {
-        color: 'blue',
-        weight: 2,
-        fillOpacity: 0.2,
-    }).addTo(map.value);
-
-    polygon.value.bindPopup(`
-        <div>
-            <strong>${props.location.name}</strong><br>
-            Area: ${props.location.data.area_km2?.toFixed(2) || 'Unknown'} km²<br>
-            Points: ${props.location.data.points.length}
-        </div>
-    `);
-
-    // Fit map to polygon bounds initially
-    map.value.fitBounds(polygon.value.getBounds());
-
-    // interaction listeners to detect manual mode - use multiple events
+    // Interaction listeners to detect manual mode
     map.value.on('dragstart drag zoomstart zoom movestart move', () => {
         // User is manually interacting with the map - disable auto modes immediately
         isOverviewActive.value = false;
@@ -848,27 +1419,55 @@ const getCurrentLocation = () => {
         alert('Geolocation is not supported by this browser.');
         return;
     }
+
     if (!isTrackingLocation.value) {
         isGettingLocation.value = true;
     }
 
+    // Enhanced geolocation options for mobile precision
+    const options = {
+        enableHighAccuracy: trackingConfig.enableHighAccuracy,
+        timeout: trackingConfig.timeout,
+        maximumAge: trackingConfig.maximumAge,
+    };
+    console.log('Requesting location with options:', options);
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
+            const heading = position.coords.heading; // Device compass heading
+            const speed = position.coords.speed; // Device-reported speed
 
-            currentLocation.value = { lat, lng, accuracy };
+            const newLocation = { lat, lng, accuracy };
+
+            // Detect movement and update state
+            detectMovement(newLocation);
+
+            // Update current location
+            currentLocation.value = {
+                lat,
+                lng,
+                accuracy,
+                heading: heading || locationState.value.heading,
+                speed: speed || locationState.value.movementSpeed,
+            };
+
             lastUpdated.value = new Date().toLocaleTimeString();
 
-            // Update marker first
+            // Always update marker (this works in all modes)
             updateLocationMarker();
 
-            // Then update camera view
-            updateCameraView();
+            // Only update camera view if NOT in free-roam mode
+            if (
+                !isFreeRoamActive.value &&
+                currentCameraMode.value !== 'free-roam'
+            ) {
+                updateCameraView();
+            }
 
-            // Finally update connection line (this prevents popup interference)
-            updateConnectionLine();
+            // Update connection lines
+            updateConnectionLines();
 
             isGettingLocation.value = false;
         },
@@ -879,22 +1478,27 @@ const getCurrentLocation = () => {
             let errorMessage = 'Unable to get your location.';
             switch (error.code) {
                 case error.PERMISSION_DENIED:
-                    errorMessage = 'Location access denied by user.';
+                    errorMessage =
+                        'Location access denied. Please enable location services.';
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Location information is unavailable.';
+                    errorMessage =
+                        'Location information is unavailable. Check your GPS signal.';
                     break;
                 case error.TIMEOUT:
-                    errorMessage = 'Location request timed out.';
+                    errorMessage =
+                        'Location request timed out. Trying again...';
+                    // Automatically retry on timeout
+                    setTimeout(() => {
+                        if (isTrackingLocation.value) {
+                            getCurrentLocation();
+                        }
+                    }, 2000);
                     break;
             }
-            alert(errorMessage);
+            console.warn(errorMessage);
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0,
-        },
+        options,
     );
 };
 
@@ -910,41 +1514,78 @@ const updateLocationMarker = () => {
         map.value.removeLayer(currentLocationCircle.value);
     }
 
-    // Add new marker
-    const markerColor = isInside.value ? 'green' : 'red';
+    // Determine marker color based on status and movement
+    let markerColor = isInsideOrNearAnyShape.value ? 'green' : 'red';
+    if (locationState.value.isMoving) {
+        markerColor = isInsideOrNearAnyShape.value ? 'darkgreen' : 'darkred';
+    }
 
-    currentLocationMarker.value = L.marker([
-        currentLocation.value.lat,
-        currentLocation.value.lng,
-    ]).addTo(map.value);
+    // Create enhanced marker icon based on movement state
+    const markerSize = locationState.value.isMoving ? [30, 45] : [25, 41];
+    const customIcon = L.icon({
+        iconUrl: markerIcon,
+        iconRetinaUrl: markerRetina,
+        shadowUrl: markerShadow,
+        iconSize: markerSize,
+        iconAnchor: [markerSize[0] / 2, markerSize[1]],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41],
+    });
+
+    currentLocationMarker.value = L.marker(
+        [currentLocation.value.lat, currentLocation.value.lng],
+        { icon: customIcon },
+    ).addTo(map.value);
+
+    // Enhanced popup with movement information
+    const statusText = isInsideOrNearAnyShape.value
+        ? `Inside/Near: ${insideShapeNames.value.join(', ')}`
+        : 'Outside all areas';
+
+    const movementText = locationState.value.isMoving
+        ? `Moving at ${(locationState.value.movementSpeed * 3.6).toFixed(1)} km/h`
+        : 'Stationary';
+
+    const accuracyText = locationState.value.isHighAccuracy
+        ? '📍 High precision GPS'
+        : '📶 Standard GPS';
 
     currentLocationMarker.value.bindPopup(`
         <div>
-            <strong>Your Location</strong><br>
-            Status: <span style="color: ${markerColor};">${isInside.value ? 'Inside Area' : 'Outside Area'}</span><br>
-            Distance to center: ${distanceToCenter.value?.toFixed(0)}m<br>
+            <strong>📱 Your Location</strong><br>
+            Status: <span style="color: ${markerColor}; font-weight: bold;">${statusText}</span><br>
+            Movement: <span style="color: blue;">${movementText}</span><br>
+            GPS: ${accuracyText}<br>
+            ${currentLocation.value.heading ? `Heading: ${currentLocation.value.heading.toFixed(0)}°<br>` : ''}
+            Distance to nearest: ${distanceToNearestShape.value?.toFixed(0)}m to ${nearestShapeName.value}<br>
             Lat: ${currentLocation.value.lat.toFixed(6)}<br>
             Lng: ${currentLocation.value.lng.toFixed(6)}<br>
-            ${currentLocation.value.accuracy ? `Accuracy: ±${Math.round(currentLocation.value.accuracy)}m` : ''}
+            Accuracy: ±${Math.round(currentLocation.value.accuracy || 0)}m
         </div>
     `);
 
-    // Add accuracy circle if available
+    // Enhanced accuracy circle with movement indication
     if (currentLocation.value.accuracy) {
+        const circleColor = locationState.value.isHighAccuracy
+            ? 'blue'
+            : 'orange';
+        const circleOpacity = locationState.value.isMoving ? 0.3 : 0.1;
+
         currentLocationCircle.value = L.circle(
             [currentLocation.value.lat, currentLocation.value.lng],
             {
-                radius:
-                    currentLocation.value.accuracy > 15
-                        ? 15
-                        : currentLocation.value.accuracy,
-                color: markerColor,
-                fillColor: markerColor,
-                fillOpacity: 0.1,
-                weight: 1,
+                radius: Math.min(currentLocation.value.accuracy, 20), // Cap at 20m for visibility
+                color: circleColor,
+                fillColor: circleColor,
+                fillOpacity: circleOpacity,
+                weight: locationState.value.isMoving ? 2 : 1,
+                dashArray: locationState.value.isMoving ? '5,5' : undefined,
             },
         ).addTo(map.value);
     }
+
+    // Update shape colors
+    updateShapeColors();
 };
 
 // Toggle location tracking
@@ -957,19 +1598,39 @@ const toggleLocationTracking = () => {
             currentCameraMode.value = '';
         }
 
-        // Reset to initial state when stopping
+        // Reset location state
+        locationState.value = {
+            isMoving: false,
+            lastMovementTime: null,
+            movementSpeed: 0,
+            heading: null,
+            lastPosition: null,
+            accuracy: null,
+            isHighAccuracy: false,
+        };
+
+        // Reset to initial state
         resetToInitialState();
+        console.log('Location tracking stopped.');
     } else {
         // Start tracking
-        getCurrentLocation(); // Get initial location
-        trackingInterval.value = setInterval(getCurrentLocation, 3000); // Every 3 seconds
         isTrackingLocation.value = true;
-        // Start Center and show line
+
+        // Get initial location
+        getCurrentLocation();
+
+        // Set up dynamic tracking interval
+        trackingInterval.value = setInterval(() => {
+            if (!isTrackingLocation.value) return;
+            getCurrentLocation();
+        }, 2000); // Initial quick fetch
+
+        // Auto-start with overview and connection lines
         setTimeout(() => {
             showOverview();
             showConnectionLine.value = true;
-            updateConnectionLine();
-        }, 300);
+            updateConnectionLines();
+        }, 500);
     }
 };
 

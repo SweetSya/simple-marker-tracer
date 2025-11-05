@@ -26,6 +26,11 @@ Route::middleware('checkAuth')->group(function () {
     Route::get('/history-marker', [LocationController::class, 'index'])->name('history-marker');
     Route::post('/marker/{id}/toggle-expiry', [LocationController::class, 'toggleExpiry'])->name('marker.toggle-expiry');
 
+    // New routes for location management
+    Route::post('/locations/{id}/extend-expiry', [LocationController::class, 'extendExpiry'])->name('locations.extend-expiry');
+    Route::put('/locations/{id}', [LocationController::class, 'update'])->name('locations.update');
+    Route::delete('/locations/{id}', [LocationController::class, 'destroy'])->name('locations.destroy');
+
     Route::get('/user-settings', [UserController::class, 'show'])->name('user-settings');
     Route::post('/user-settings/profile', [UserController::class, 'updateProfile'])->name('user-settings.profile');
     Route::post('/user-settings/password', [UserController::class, 'updatePassword'])->name('user-settings.password');

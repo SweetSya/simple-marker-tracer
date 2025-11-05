@@ -1,19 +1,19 @@
 <template>
     <section
-        class="bg-gradient-to-b from-primary-300 via-primary-500 to-primary-700"
+        class="flex min-h-screen items-center justify-center bg-[url('/assets/background.jpg')] bg-cover bg-center bg-no-repeat"
     >
         <div
-            class="mx-auto flex flex-col items-center justify-center px-6 py-8 md:h-screen lg:py-0"
+            class="mx-auto flex min-w-auto flex-col items-center justify-center px-6 py-8 md:h-screen md:min-w-md lg:py-0"
         >
+            <h1
+                class="mb-7 text-center text-xl leading-tight font-bold tracking-tight text-gray-900 md:text-2xl dark:text-white"
+            >
+                Simple Mapping Tracer (SMT)
+            </h1>
             <div
                 class="w-full rounded-lg bg-white shadow sm:max-w-md md:mt-0 xl:p-0 dark:border dark:border-gray-700 dark:bg-gray-800"
             >
                 <div class="space-y-4 p-6 sm:p-8 md:space-y-6">
-                    <h1
-                        class="mb-1 text-xl leading-tight font-bold tracking-tight text-gray-900 md:text-2xl dark:text-white"
-                    >
-                        Simple Mapping Tracer
-                    </h1>
                     <p class="text-gray-500 dark:text-gray-400">
                         Sign in to your account
                     </p>
@@ -107,12 +107,24 @@
 </template>
 
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
+import { useNotyf } from '@/composables/useNotyf';
+import { useForm, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     errors?: Record<string, string>;
 }>();
 
+const notyf = useNotyf();
+const page = usePage();
+
+console.log(page.props);
+if (page.props.notyf) {
+    if (page.props.notyf.type === 'success') {
+        notyf.success(page.props.notyf.message);
+    } else if (page.props.notyf.type === 'error') {
+        notyf.error(page.props.notyf.message);
+    }
+}
 const form = useForm({
     email: '',
     password: '',

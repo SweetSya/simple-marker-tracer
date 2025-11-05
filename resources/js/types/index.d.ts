@@ -24,6 +24,10 @@ export type AppPageProps<
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    notyf?: {
+        type: 'success' | 'error' | 'info' | 'warning';
+        message: string;
+    };
 };
 
 export interface User {

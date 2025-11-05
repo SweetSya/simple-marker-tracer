@@ -1,6 +1,6 @@
 <template>
     <AppLayout>
-        <div class="min-h-screen bg-gray-50 p-4">
+        <div class=" p-4">
             <!-- Header Section -->
             <div class="mb-6">
                 <div
@@ -32,11 +32,11 @@
                         </div>
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">
-                                Create Marker
+                                Create Shapes
                             </h1>
                             <p class="mt-1 text-gray-600">
-                                Design custom polygons by clicking on the map or
-                                entering coordinates manually
+                                Design custom lines and polygons by clicking on
+                                the map or entering coordinates manually
                             </p>
                         </div>
                     </div>
@@ -50,12 +50,6 @@
                 >
                     <!-- Map Type Selector -->
                     <div class="w-full">
-                        <label
-                            for="mapSelect"
-                            class="mb-2 block text-sm font-medium text-gray-700"
-                        >
-                            Map Type
-                        </label>
                         <div class="relative">
                             <select
                                 id="mapSelect"
@@ -69,9 +63,6 @@
                                 </option>
                                 <option value="terrain">🏔️ Terrain View</option>
                             </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3"
-                            ></div>
                         </div>
                     </div>
                     <div
@@ -85,12 +76,46 @@
                             <div
                                 class="flex h-18 space-x-2 rounded-xl border border-gray-200 bg-white/95 p-3 text-nowrap shadow-lg backdrop-blur-sm sm:block sm:h-auto sm:space-y-2 sm:space-x-0 sm:text-wrap"
                             >
+                                <!-- Drawing Mode Buttons -->
                                 <button
                                     v-show="!showCoordinateInput"
-                                    @click="togglePolygonMode"
+                                    @click="toggleDrawingMode('line')"
                                     :class="[
                                         'flex w-full transform items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-105',
-                                        isPolygonMode
+                                        isPolygonMode &&
+                                        currentShapeType === 'line'
+                                            ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                                            : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:from-green-600 hover:to-green-700',
+                                    ]"
+                                >
+                                    <svg
+                                        class="mr-2 h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                                        />
+                                    </svg>
+                                    {{
+                                        isPolygonMode &&
+                                        currentShapeType === 'line'
+                                            ? 'Cancel Line'
+                                            : 'Draw Line'
+                                    }}
+                                </button>
+
+                                <button
+                                    v-show="!showCoordinateInput"
+                                    @click="toggleDrawingMode('polygon')"
+                                    :class="[
+                                        'flex w-full transform items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-105',
+                                        isPolygonMode &&
+                                        currentShapeType === 'polygon'
                                             ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
                                             : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:from-blue-600 hover:to-blue-700',
                                     ]"
@@ -105,12 +130,13 @@
                                             stroke-linecap="round"
                                             stroke-linejoin="round"
                                             stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2l6 3 5.447-2.724A1 1 0 0121 3.382v10.764a1 1 0 01-.553.894L15 18l-6-3z"
                                         />
                                     </svg>
                                     {{
-                                        isPolygonMode
-                                            ? 'Cancel Drawing'
+                                        isPolygonMode &&
+                                        currentShapeType === 'polygon'
+                                            ? 'Cancel Polygon'
                                             : 'Draw Polygon'
                                     }}
                                 </button>
@@ -144,9 +170,8 @@
                                             : 'Enter Coordinates'
                                     }}
                                 </button>
-
                                 <button
-                                    v-if="currentPolygonPoints.length > 0"
+                                    v-if="currentShapePoints.length > 0"
                                     @click="removeLastPoint"
                                     class="flex w-full transform items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3 text-sm font-medium text-white shadow-md transition-all duration-200 hover:scale-105 hover:from-orange-600 hover:to-orange-700"
                                 >
@@ -161,12 +186,6 @@
                                             stroke-linejoin="round"
                                             stroke-width="2"
                                             d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4z"
-                                        />
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8L4.067 11.2z"
                                         />
                                     </svg>
                                     Undo Last Point
@@ -266,6 +285,7 @@
                             </div>
                         </div>
 
+                        <!-- Shape Creation Panel -->
                         <div
                             class="absolute right-0 bottom-0 z-[502] flex w-full flex-col sm:w-auto"
                         >
@@ -324,7 +344,7 @@
                                                     @click="
                                                         hideCoordinateInput =
                                                             !hideCoordinateInput;
-                                                        hidePolygonCreation = true;
+                                                        hideShapeCreation = true;
                                                     "
                                                     class="rounded-lg p-2 transition-colors hover:bg-indigo-100"
                                                 >
@@ -797,12 +817,12 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Polygon Creation Panel -->
+                            <!-- Shape Creation Panel -->
                             <div class="w-full p-1 sm:w-fit">
                                 <div
                                     v-if="
                                         isPolygonMode ||
-                                        currentPolygonPoints.length > 0 ||
+                                        currentShapePoints.length > 0 ||
                                         showCoordinateInput
                                     "
                                     class="sm:w-sm"
@@ -812,7 +832,12 @@
                                     >
                                         <!-- Panel Header -->
                                         <div
-                                            class="border-b border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4"
+                                            :class="[
+                                                'border-b p-4',
+                                                currentShapeType === 'line'
+                                                    ? 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50'
+                                                    : 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50',
+                                            ]"
                                         >
                                             <div
                                                 class="flex items-center justify-between"
@@ -821,28 +846,54 @@
                                                     <h3
                                                         class="text-lg font-semibold text-gray-900"
                                                     >
-                                                        Confirm Polygon
+                                                        Confirm
+                                                        {{
+                                                            currentShapeType ===
+                                                            'line'
+                                                                ? 'Line'
+                                                                : 'Polygon'
+                                                        }}
                                                     </h3>
                                                     <p
                                                         class="text-sm text-gray-600"
                                                     >
                                                         {{
-                                                            currentPolygonPoints.length
+                                                            currentShapePoints.length
                                                         }}
                                                         points added
+                                                        <span
+                                                            v-if="
+                                                                currentShapeType ===
+                                                                    'line' &&
+                                                                currentShapePoints.length >=
+                                                                    2
+                                                            "
+                                                        >
+                                                            • Ready to finish
+                                                        </span>
+                                                        <span
+                                                            v-else-if="
+                                                                currentShapeType ===
+                                                                    'polygon' &&
+                                                                currentShapePoints.length >=
+                                                                    3
+                                                            "
+                                                        >
+                                                            • Ready to finish
+                                                        </span>
                                                     </p>
                                                 </div>
                                                 <button
                                                     @click="
-                                                        ((hidePolygonCreation =
-                                                            !hidePolygonCreation),
+                                                        ((hideShapeCreation =
+                                                            !hideShapeCreation),
                                                         (hideCoordinateInput = true))
                                                     "
-                                                    class="gp-2 rounded-lg transition-colors hover:bg-green-100"
+                                                    class="rounded-lg p-2 transition-colors hover:bg-gray-100"
                                                 >
                                                     <ChevronUp
                                                         v-if="
-                                                            !hidePolygonCreation
+                                                            !hideShapeCreation
                                                         "
                                                         class="h-5 w-5 text-gray-500"
                                                     />
@@ -856,22 +907,32 @@
 
                                         <!-- Panel Content -->
                                         <div
-                                            v-show="!hidePolygonCreation"
+                                            v-show="!hideShapeCreation"
                                             class="space-y-4 p-4"
                                         >
-                                            <!-- Polygon Name Input -->
+                                            <!-- Shape Name Input -->
                                             <div>
                                                 <label
                                                     class="mb-2 block text-sm font-medium text-gray-700"
                                                 >
-                                                    Polygon Name
+                                                    {{
+                                                        currentShapeType ===
+                                                        'line'
+                                                            ? 'Line'
+                                                            : 'Polygon'
+                                                    }}
+                                                    Name
                                                 </label>
                                                 <input
-                                                    v-model="currentPolygonName"
+                                                    v-model="currentShapeName"
                                                     type="text"
-                                                    placeholder="e.g., Park Area, Building Zone..."
+                                                    :placeholder="
+                                                        currentShapeType ===
+                                                        'line'
+                                                            ? 'e.g., Road, Path, Route...'
+                                                            : 'e.g., Park Area, Building Zone...'
+                                                    "
                                                     class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-200"
-                                                    inputmode="decimal"
                                                 />
                                             </div>
 
@@ -894,47 +955,59 @@
                                                         />
                                                     </svg>
                                                     Click on the map to add
-                                                    points. You need at least 3
-                                                    points to create a polygon.
+                                                    points. You need at least
+                                                    {{ minPointsRequired }}
+                                                    points to create a
+                                                    {{ currentShapeType }}.
                                                 </p>
                                             </div>
 
                                             <!-- Action Buttons -->
                                             <div class="flex gap-2">
                                                 <button
-                                                    @click="finishPolygon"
+                                                    @click="finishShape"
                                                     :disabled="
-                                                        currentPolygonPoints.length <
-                                                        3
+                                                        currentShapePoints.length <
+                                                        minPointsRequired
                                                     "
                                                     :class="[
                                                         'flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
-                                                        currentPolygonPoints.length >=
-                                                        3
+                                                        currentShapePoints.length >=
+                                                        minPointsRequired
                                                             ? 'transform bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:scale-105'
                                                             : 'cursor-not-allowed bg-gray-100 text-gray-400',
                                                     ]"
                                                 >
                                                     {{
-                                                        currentPolygonPoints.length >=
-                                                        3
+                                                        currentShapePoints.length >=
+                                                        minPointsRequired
                                                             ? '✓ Complete'
-                                                            : `Need ${3 - currentPolygonPoints.length} more`
+                                                            : `Need ${minPointsRequired - currentShapePoints.length} more`
                                                     }}
                                                 </button>
 
                                                 <button
-                                                    @click="cancelPolygon"
-                                                    class="rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
+                                                    :disabled="
+                                                        currentShapePoints.length <
+                                                        1
+                                                    "
+                                                    :class="[
+                                                        'rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
+                                                        currentShapePoints.length >=
+                                                        1
+                                                            ? 'transform bg-red-700 text-white shadow-md hover:scale-105 hover:bg-red-200'
+                                                            : 'cursor-not-allowed bg-gray-100 text-gray-400',
+                                                    ]"
+                                                    @click="cancelShape"
                                                 >
-                                                    Cancel
+                                                    Clear
                                                 </button>
                                             </div>
 
                                             <!-- Current Points List -->
                                             <div
                                                 v-if="
-                                                    currentPolygonPoints.length >
+                                                    currentShapePoints.length >
                                                     0
                                                 "
                                                 class="max-h-32 overflow-y-auto"
@@ -948,19 +1021,19 @@
                                                     <div
                                                         v-for="(
                                                             point, index
-                                                        ) in currentPolygonPoints"
+                                                        ) in currentShapePoints"
                                                         :key="index"
                                                         class="flex items-center justify-between rounded-lg bg-gray-50 p-2 text-xs"
                                                     >
                                                         <span
                                                             class="font-medium text-gray-600"
-                                                            >{{
-                                                                index + 1
-                                                            }}.</span
                                                         >
+                                                            {{ index + 1 }}.
+                                                        </span>
                                                         <span
                                                             class="font-mono text-gray-800"
-                                                            >{{
+                                                        >
+                                                            {{
                                                                 point.lat.toFixed(
                                                                     4,
                                                                 )
@@ -969,8 +1042,8 @@
                                                                 point.lng.toFixed(
                                                                     4,
                                                                 )
-                                                            }}</span
-                                                        >
+                                                            }}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -979,6 +1052,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div
                             @click="focusOnMap = true"
                             v-show="!focusOnMap"
@@ -996,11 +1070,12 @@
                         <div
                             v-show="showCoordinateInput"
                             :class="[
-                                currentPolygonPoints.length > 0 ? '' : 'backdrop-blur-[1px]',
+                                currentPolygonPoints.length > 0
+                                    ? ''
+                                    : 'backdrop-blur-[1px]',
                             ]"
                             class="absolute top-0 z-[500] flex h-[500px] w-full cursor-pointer items-center justify-center transition-opacity duration-200"
-                        >
-                        </div>
+                        ></div>
                         <button
                             v-show="focusOnMap"
                             class="absolute bottom-2 left-2 z-[501] rounded-lg bg-white/90 px-3 py-2 text-sm font-medium text-gray-700 shadow-md backdrop-blur-sm transition-colors hover:bg-gray-100"
@@ -1016,10 +1091,10 @@
                     </div>
                 </div>
 
+                <!-- Shapes Display Panel -->
                 <div
                     class="col-span-2 h-full lg:col-span-1 lg:flex lg:flex-col"
                 >
-                    <!-- Polygons Display -->
                     <div
                         class="grow overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
                     >
@@ -1049,11 +1124,11 @@
                                         <h3
                                             class="text-lg font-semibold text-gray-900"
                                         >
-                                            Created Polygons
+                                            Created Shapes
                                         </h3>
                                         <p class="text-sm text-gray-600">
-                                            {{ polygons.length }} polygon{{
-                                                polygons.length !== 1 ? 's' : ''
+                                            {{ shapes.length }} shape{{
+                                                shapes.length !== 1 ? 's' : ''
                                             }}
                                             ready
                                         </p>
@@ -1062,14 +1137,14 @@
                                 <div
                                     class="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800"
                                 >
-                                    {{ polygons.length }}
+                                    {{ shapes.length }}
                                 </div>
                             </div>
                         </div>
 
                         <div class="p-6">
                             <div
-                                v-if="polygons.length === 0"
+                                v-if="shapes.length === 0"
                                 class="py-12 text-center"
                             >
                                 <svg
@@ -1088,11 +1163,11 @@
                                 <h4
                                     class="mb-2 text-lg font-medium text-gray-900"
                                 >
-                                    No polygons created yet
+                                    No shapes created yet
                                 </h4>
                                 <p class="text-gray-600">
-                                    Start by clicking "Draw Polygon" or "Enter
-                                    Coordinates" and adding points
+                                    Start by clicking "Draw Line" or "Draw
+                                    Polygon" and adding points
                                 </p>
                             </div>
 
@@ -1101,44 +1176,107 @@
                                 class="max-h-80 space-y-4 overflow-y-auto"
                             >
                                 <div
-                                    v-for="(polygon, index) in polygons"
-                                    :key="index"
-                                    class="rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 p-4 transition-shadow hover:shadow-md"
+                                    v-for="(shape, index) in shapes"
+                                    :key="shape.id"
+                                    :class="[
+                                        'rounded-xl border border-gray-200 p-4 transition-shadow hover:shadow-md',
+                                        shape.type === 'line'
+                                            ? 'bg-gradient-to-r from-green-50 to-emerald-100'
+                                            : 'bg-gradient-to-r from-blue-50 to-indigo-100',
+                                    ]"
                                 >
                                     <div
                                         class="mb-3 flex items-center justify-between"
                                     >
                                         <div class="flex items-center">
                                             <div
-                                                class="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-sm font-bold text-blue-600"
+                                                :class="[
+                                                    'mr-3 flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold',
+                                                    shape.type === 'line'
+                                                        ? 'bg-green-200 text-green-700'
+                                                        : 'bg-blue-200 text-blue-700',
+                                                ]"
                                             >
-                                                {{ index + 1 }}
+                                                <svg
+                                                    v-if="shape.type === 'line'"
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                                                    />
+                                                </svg>
+                                                <svg
+                                                    v-else
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2l6 3 5.447-2.724A1 1 0 0121 3.382v10.764a1 1 0 01-.553.894L15 18l-6-3z"
+                                                    />
+                                                </svg>
                                             </div>
                                             <div>
                                                 <h4
                                                     class="font-semibold text-gray-900"
                                                 >
-                                                    {{
-                                                        polygon.name ||
-                                                        `Polygon ${index + 1}`
-                                                    }}
+                                                    {{ shape.name }}
                                                 </h4>
                                                 <p
                                                     class="text-sm text-gray-600"
                                                 >
-                                                    {{ polygon.points.length }}
-                                                    points •
-                                                    {{
-                                                        polygon.area.toFixed(2)
-                                                    }}
-                                                    km²
+                                                    {{ shape.points.length }}
+                                                    points
+                                                    <span
+                                                        v-if="
+                                                            shape.type ===
+                                                            'polygon'
+                                                        "
+                                                    >
+                                                        •
+                                                        {{
+                                                            shape.area?.toFixed(
+                                                                2,
+                                                            )
+                                                        }}
+                                                        km²
+                                                    </span>
+                                                    <span
+                                                        v-else-if="
+                                                            shape.type ===
+                                                            'line'
+                                                        "
+                                                    >
+                                                        •
+                                                        {{
+                                                            shape.length?.toFixed(
+                                                                2,
+                                                            )
+                                                        }}
+                                                        km
+                                                    </span>
                                                 </p>
                                             </div>
                                         </div>
                                         <div class="flex gap-2">
                                             <button
-                                                @click="visitPolygon(polygon)"
-                                                class="flex items-center rounded-lg bg-blue-100 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-200"
+                                                @click="visitShape(shape)"
+                                                :class="[
+                                                    'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                                    shape.type === 'line'
+                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200',
+                                                ]"
                                             >
                                                 <ArrowRight
                                                     class="mr-1 h-4 w-4"
@@ -1146,7 +1284,7 @@
                                                 View
                                             </button>
                                             <button
-                                                @click="removePolygon(index)"
+                                                @click="removeShape(index)"
                                                 class="flex items-center rounded-lg bg-red-100 px-3 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
                                             >
                                                 <Trash class="mr-1 h-4 w-4" />
@@ -1163,7 +1301,7 @@
                                             <div
                                                 v-for="(
                                                     point, pointIndex
-                                                ) in polygon.points.slice(0, 4)"
+                                                ) in shape.points.slice(0, 4)"
                                                 :key="pointIndex"
                                                 class="font-mono"
                                             >
@@ -1173,11 +1311,11 @@
                                             </div>
                                         </div>
                                         <div
-                                            v-if="polygon.points.length > 4"
+                                            v-if="shape.points.length > 4"
                                             class="mt-2 text-center text-gray-500"
                                         >
                                             ... and
-                                            {{ polygon.points.length - 4 }} more
+                                            {{ shape.points.length - 4 }} more
                                             points
                                         </div>
                                     </div>
@@ -1185,40 +1323,20 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- Save Button -->
                     <div class="mt-6 text-center">
                         <button
-                            @click="savePolygons"
-                            :disabled="polygons.length === 0 || isSaving"
+                            @click="openSaveModal"
+                            :disabled="shapes.length === 0 || isSaving"
                             :class="[
                                 'w-full transform rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-200',
-                                polygons.length === 0 || isSaving
+                                shapes.length === 0 || isSaving
                                     ? 'cursor-not-allowed bg-gray-100 text-gray-400'
                                     : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg hover:scale-105 hover:shadow-xl',
                             ]"
                         >
                             <svg
-                                v-if="isSaving"
-                                class="mr-2 inline h-5 w-5 animate-spin"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    class="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    stroke-width="4"
-                                ></circle>
-                                <path
-                                    class="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                            </svg>
-                            <svg
-                                v-else
                                 class="mr-2 inline h-5 w-5"
                                 fill="none"
                                 stroke="currentColor"
@@ -1232,14 +1350,99 @@
                                 />
                             </svg>
                             {{
-                                polygons.length === 0
-                                    ? 'Create at least one polygon to save'
-                                    : isSaving
-                                      ? 'Saving Polygons...'
-                                      : `Save ${polygons.length} Polygon${polygons.length !== 1 ? 's' : ''}`
+                                shapes.length === 0
+                                    ? 'Create at least one shape to save'
+                                    : `Save ${shapes.length} Shape${shapes.length !== 1 ? 's' : ''}`
                             }}
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Modal -->
+        <div
+            v-if="showSaveModal"
+            class="bg-opacity-50 fixed inset-0 z-[1001] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            @click="showSaveModal = false"
+        >
+            <div
+                class="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+                @click.stop
+            >
+                <h3 class="mb-4 text-xl font-bold text-gray-900">
+                    Save Shape Collection
+                </h3>
+
+                <div class="mb-4">
+                    <label class="mb-2 block text-sm font-medium text-gray-700">
+                        Collection Name
+                    </label>
+                    <input
+                        v-model="collectionName"
+                        type="text"
+                        placeholder="e.g., Survey Area, Route Plan..."
+                        class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm transition-colors focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-200"
+                        @keydown.enter="saveShapes"
+                    />
+                </div>
+
+                <div
+                    class="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3"
+                >
+                    <p class="text-sm text-blue-800">
+                        This will save {{ shapes.length }} shape{{
+                            shapes.length !== 1 ? 's' : ''
+                        }}:
+                    </p>
+                    <ul class="mt-2 text-xs text-blue-700">
+                        <li v-for="shape in shapes" :key="shape.id">
+                            • {{ shape.name }} ({{ shape.type }})
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="flex gap-3">
+                    <button
+                        @click="saveShapes"
+                        :disabled="!collectionName.trim() || isSaving"
+                        :class="[
+                            'flex-1 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200',
+                            !collectionName.trim() || isSaving
+                                ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                                : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
+                        ]"
+                    >
+                        <svg
+                            v-if="isSaving"
+                            class="mr-2 inline h-4 w-4 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                            ></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                        {{ isSaving ? 'Saving...' : 'Save Collection' }}
+                    </button>
+
+                    <button
+                        @click="showSaveModal = false"
+                        :disabled="isSaving"
+                        class="rounded-lg bg-gray-100 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
@@ -1292,7 +1495,20 @@ interface PolygonData {
     polygon: L.Polygon;
     area: number;
 }
+interface ShapePoint {
+    lat: number;
+    lng: number;
+}
 
+interface ShapeData {
+    id: string;
+    name: string;
+    type: 'line' | 'polygon';
+    points: ShapePoint[];
+    shape: L.Polygon | L.Polyline; // Updated to support both
+    area?: number; // Optional for lines
+    length?: number; // For lines
+}
 // Reactive variables
 const mapContainer = ref<HTMLElement>();
 const map = ref<L.Map | null>(null);
@@ -1304,11 +1520,11 @@ const markers = ref<Array<{ lat: number; lng: number; marker: L.Marker }>>([]);
 const polygons = ref<PolygonData[]>([]);
 const currentLocationMarker = ref<L.Marker | null>(null);
 const currentLocationCircle = ref<L.Circle | null>(null);
-const hidePolygonCreation = ref(false);
+const hideShapeCreation = ref(false); // Add this missing variable
 const isSaving = ref(false);
 const showCoordinateInput = ref(false);
 const hideCoordinateInput = ref(false);
-const coordinateFormat = ref<'DD' | 'DMS'>('DD');
+const coordinateFormat = ref<'DD' | 'DMS' | 'STRING'>('DD');
 const dmsInput = ref({
     latDeg: null as number | null,
     latMin: null as number | null,
@@ -1322,6 +1538,14 @@ const dmsInput = ref({
 const coordinateInput = ref('');
 const focusOnMap = ref(false);
 const coordinateTextarea = ref<HTMLTextAreaElement>();
+const showSaveModal = ref(false);
+const collectionName = ref('');
+const shapes = ref<ShapeData[]>([]);
+const currentShapePoints = ref<ShapePoint[]>([]);
+const currentShapeMarkers = ref<L.Marker[]>([]);
+const currentShapeLines = ref<L.Polyline[]>([]);
+const currentShapeName = ref('');
+const currentShapeType = ref<'line' | 'polygon'>('polygon');
 
 // Polygon creation
 const currentPolygonPoints = ref<PolygonPoint[]>([]);
@@ -1337,6 +1561,10 @@ const manualInput = ref({
 const manualInputError = ref('');
 
 // Computed properties
+const minPointsRequired = computed(() => {
+    return currentShapeType.value === 'line' ? 2 : 3;
+});
+
 const isValidCoordinateInput = computed(() => {
     if (coordinateFormat.value === 'DD') {
         const { lat, lng } = manualInput.value;
@@ -1423,7 +1651,35 @@ const setMapView = (lat: number, lng: number, zoom: number = 13) => {
         map.value.setView([lat, lng], zoom);
     }
 };
+// Calculate line length
+const calculateLineLength = (points: ShapePoint[]): number => {
+    if (points.length < 2) return 0;
 
+    let totalLength = 0;
+    for (let i = 1; i < points.length; i++) {
+        totalLength += calculateDistance(points[i - 1], points[i]);
+    }
+
+    return totalLength / 1000; // Convert to kilometers
+};
+// Calculate distance between two points
+const calculateDistance = (
+    point1: { lat: number; lng: number },
+    point2: { lat: number; lng: number },
+): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (point1.lat * Math.PI) / 180;
+    const φ2 = (point2.lat * Math.PI) / 180;
+    const Δφ = ((point2.lat - point1.lat) * Math.PI) / 180;
+    const Δλ = ((point2.lng - point1.lng) * Math.PI) / 180;
+
+    const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+};
 // Calculate polygon center
 const getPolygonCenter = (
     points: PolygonPoint[],
@@ -1526,7 +1782,7 @@ const onMapClick = (e: L.LeafletMouseEvent) => {
     if (isMarkerMode.value) {
         addMarker(e.latlng);
     } else if (isPolygonMode.value) {
-        addPolygonPoint(e.latlng);
+        addShapePoint(e.latlng);
     }
 };
 
@@ -1647,7 +1903,6 @@ const addPolygonPoint = (latlng: L.LatLng) => {
     }
 };
 
-// Add point from manual input
 const addPointFromInput = () => {
     manualInputError.value = '';
 
@@ -1686,16 +1941,106 @@ const addPointFromInput = () => {
     }
 
     if (!isPolygonMode.value) {
+        // Default to polygon mode when adding from input
+        currentShapeType.value = 'polygon';
         isPolygonMode.value = true;
         isMarkerMode.value = false;
     }
 
     const latlng = L.latLng(lat, lng);
-    addPolygonPoint(latlng);
+    addShapePoint(latlng);
     clearManualInput();
     map.value?.setView(latlng, map.value.getZoom());
 };
+const addShapePoint = (latlng: L.LatLng) => {
+    if (!map.value) return;
 
+    try {
+        const point: ShapePoint = {
+            lat: latlng.lat,
+            lng: latlng.lng,
+        };
+
+        currentShapePoints.value.push(point);
+
+        // Add temporary marker for this point
+        const marker = L.marker(latlng, {
+            icon: L.icon({
+                iconUrl: markerIcon,
+                iconRetinaUrl: markerRetina,
+                shadowUrl: markerShadow,
+                iconSize: [20, 32],
+                iconAnchor: [10, 32],
+                popupAnchor: [1, -30],
+                shadowSize: [32, 32],
+            }),
+        }).addTo(map.value);
+
+        marker.bindPopup(`
+            <div>
+                <strong>${currentShapeType.value === 'line' ? 'Line' : 'Polygon'} Point ${currentShapePoints.value.length}</strong><br>
+                Lat: ${latlng.lat.toFixed(6)}<br>
+                Lng: ${latlng.lng.toFixed(6)}
+            </div>
+        `);
+
+        currentShapeMarkers.value.push(marker);
+
+        // Draw lines between points
+        if (currentShapePoints.value.length > 1) {
+            const previousPoint =
+                currentShapePoints.value[currentShapePoints.value.length - 2];
+            const line = L.polyline(
+                [
+                    [previousPoint.lat, previousPoint.lng],
+                    [point.lat, point.lng],
+                ],
+                {
+                    color: 'red',
+                    weight: 2,
+                    dashArray: '5, 5',
+                },
+            ).addTo(map.value);
+
+            currentShapeLines.value.push(line);
+        }
+
+        // For polygons, show preview line to first point when we have 3+ points
+        if (
+            currentShapeType.value === 'polygon' &&
+            currentShapePoints.value.length >= 3
+        ) {
+            // Remove any existing preview line
+            const existingPreview = currentShapeLines.value.find(
+                (line) => (line as any).isPreview,
+            );
+            if (existingPreview) {
+                map.value.removeLayer(existingPreview);
+                const index = currentShapeLines.value.indexOf(existingPreview);
+                currentShapeLines.value.splice(index, 1);
+            }
+
+            // Add new preview line
+            const firstPoint = currentShapePoints.value[0];
+            const previewLine = L.polyline(
+                [
+                    [point.lat, point.lng],
+                    [firstPoint.lat, firstPoint.lng],
+                ],
+                {
+                    color: 'orange',
+                    weight: 2,
+                    dashArray: '10, 5',
+                },
+            ).addTo(map.value);
+
+            (previewLine as any).isPreview = true;
+            currentShapeLines.value.push(previewLine);
+        }
+    } catch (error) {
+        console.error('Error adding shape point:', error);
+    }
+};
 // Finish polygon creation
 const finishPolygon = () => {
     if (currentPolygonName.value == '') {
@@ -1790,30 +2135,30 @@ const cancelPolygon = () => {
 
 // Remove last point
 const removeLastPoint = () => {
-    if (currentPolygonPoints.value.length === 0 || !map.value) return;
+    if (currentShapePoints.value.length === 0 || !map.value) return;
 
     try {
         // Remove last point
-        currentPolygonPoints.value.pop();
+        currentShapePoints.value.pop();
 
         // Remove last marker
-        const lastMarker = currentPolygonMarkers.value.pop();
+        const lastMarker = currentShapeMarkers.value.pop();
         if (lastMarker) {
             map.value.removeLayer(lastMarker);
         }
 
         // Remove connecting lines and rebuild
-        currentPolygonLines.value.forEach((line) => {
+        currentShapeLines.value.forEach((line) => {
             if (map.value) {
                 map.value.removeLayer(line);
             }
         });
-        currentPolygonLines.value = [];
+        currentShapeLines.value = [];
 
         // Rebuild lines
-        for (let i = 1; i < currentPolygonPoints.value.length; i++) {
-            const prevPoint = currentPolygonPoints.value[i - 1];
-            const currPoint = currentPolygonPoints.value[i];
+        for (let i = 1; i < currentShapePoints.value.length; i++) {
+            const prevPoint = currentShapePoints.value[i - 1];
+            const currPoint = currentShapePoints.value[i];
             const line = L.polyline(
                 [
                     [prevPoint.lat, prevPoint.lng],
@@ -1825,16 +2170,17 @@ const removeLastPoint = () => {
                     dashArray: '5, 5',
                 },
             ).addTo(map.value);
-            currentPolygonLines.value.push(line);
+            currentShapeLines.value.push(line);
         }
 
-        // Add preview line if we have 3+ points
-        if (currentPolygonPoints.value.length >= 3) {
-            const firstPoint = currentPolygonPoints.value[0];
+        // Add preview line only for polygons with 3+ points
+        if (
+            currentShapeType.value === 'polygon' &&
+            currentShapePoints.value.length >= 3
+        ) {
+            const firstPoint = currentShapePoints.value[0];
             const lastPoint =
-                currentPolygonPoints.value[
-                    currentPolygonPoints.value.length - 1
-                ];
+                currentShapePoints.value[currentShapePoints.value.length - 1];
             const previewLine = L.polyline(
                 [
                     [lastPoint.lat, lastPoint.lng],
@@ -1847,7 +2193,7 @@ const removeLastPoint = () => {
                 },
             ).addTo(map.value);
             (previewLine as any).isPreview = true;
-            currentPolygonLines.value.push(previewLine);
+            currentShapeLines.value.push(previewLine);
         }
     } catch (error) {
         console.error('Error removing last point:', error);
@@ -2046,6 +2392,18 @@ const toggleMarkerMode = () => {
         cancelPolygon();
     }
 };
+const toggleDrawingMode = (type: 'line' | 'polygon') => {
+    if (isPolygonMode.value && currentShapeType.value === type) {
+        // Cancel current drawing
+        cancelShape();
+    } else {
+        // Start new drawing
+        cancelShape(); // Clear any existing drawing
+        currentShapeType.value = type;
+        isPolygonMode.value = true;
+        isMarkerMode.value = false;
+    }
+};
 const toggleCoordinateInput = () => {
     showCoordinateInput.value = !showCoordinateInput.value;
     if (!showCoordinateInput.value) {
@@ -2053,7 +2411,7 @@ const toggleCoordinateInput = () => {
         clearManualInput();
     } else {
         hideCoordinateInput.value = false;
-        hidePolygonCreation.value = true;
+        hideShapeCreation.value = true;
     }
 };
 
@@ -2084,6 +2442,228 @@ const changeMapType = () => {
         console.error('Error changing map type:', error);
     }
 };
+// Remove shape
+const removeShape = (index: number) => {
+    if (shapes.value[index] && map.value) {
+        map.value.removeLayer(shapes.value[index].shape);
+        shapes.value.splice(index, 1);
+    }
+};
+
+// Visit shape - center map on shape
+const visitShape = (shape: ShapeData) => {
+    if (!map.value) return;
+
+    if (shape.type === 'polygon') {
+        map.value.fitBounds((shape.shape as L.Polygon).getBounds());
+    } else {
+        map.value.fitBounds((shape.shape as L.Polyline).getBounds());
+    }
+};
+
+// Open save modal
+const openSaveModal = () => {
+    if (shapes.value.length === 0) {
+        notyf.error('No shapes to save.');
+        return;
+    }
+    showSaveModal.value = true;
+    collectionName.value = '';
+};
+// Finish shape creation
+const finishShape = () => {
+    if (currentShapeName.value === '') {
+        notyf.error(
+            `Please provide a name for the ${currentShapeType.value} before finishing.`,
+        );
+        return;
+    }
+
+    if (
+        currentShapePoints.value.length < minPointsRequired.value ||
+        !map.value
+    ) {
+        return;
+    }
+
+    try {
+        // Clear temporary markers and lines
+        currentShapeMarkers.value.forEach((marker) => {
+            if (map.value) {
+                map.value.removeLayer(marker);
+            }
+        });
+        currentShapeLines.value.forEach((line) => {
+            if (map.value) {
+                map.value.removeLayer(line);
+            }
+        });
+
+        // Create the actual shape
+        const shapeCoords = currentShapePoints.value.map(
+            (point) => [point.lat, point.lng] as [number, number],
+        );
+
+        let shape: L.Polygon | L.Polyline;
+        let area: number | undefined;
+        let length: number | undefined;
+
+        if (currentShapeType.value === 'polygon') {
+            shape = L.polygon(shapeCoords, {
+                color: 'blue',
+                weight: 2,
+                fillOpacity: 0.2,
+            }).addTo(map.value);
+            area = calculatePolygonArea(currentShapePoints.value);
+        } else {
+            shape = L.polyline(shapeCoords, {
+                color: 'green',
+                weight: 3,
+                opacity: 0.8,
+            }).addTo(map.value);
+            length = calculateLineLength(currentShapePoints.value);
+        }
+
+        // Get shape name
+        const shapeName =
+            currentShapeName.value.trim() ||
+            `${currentShapeType.value === 'line' ? 'Line' : 'Polygon'} ${shapes.value.length + 1}`;
+
+        // Add popup to shape
+        const popupContent =
+            currentShapeType.value === 'polygon'
+                ? `<div><strong>${shapeName}</strong><br>Points: ${currentShapePoints.value.length}<br>Area: ${area?.toFixed(2)} km²</div>`
+                : `<div><strong>${shapeName}</strong><br>Points: ${currentShapePoints.value.length}<br>Length: ${length?.toFixed(2)} km</div>`;
+
+        shape.bindPopup(popupContent);
+
+        // Store the shape
+        shapes.value.push({
+            id: Date.now().toString(),
+            name: shapeName,
+            type: currentShapeType.value,
+            points: [...currentShapePoints.value],
+            shape: shape,
+            area: area,
+            length: length,
+        });
+
+        // Fit map to show the shape
+        if (currentShapeType.value === 'polygon') {
+            map.value.fitBounds((shape as L.Polygon).getBounds());
+        } else {
+            map.value.fitBounds((shape as L.Polyline).getBounds());
+        }
+
+        // Reset shape creation state
+        cancelShape();
+    } catch (error) {
+        console.error('Error finishing shape:', error);
+    }
+};
+const cancelShape = () => {
+    if (!map.value) return;
+
+    try {
+        // Clear temporary markers and lines
+        currentShapeMarkers.value.forEach((marker) => {
+            map.value!.removeLayer(marker);
+        });
+        currentShapeLines.value.forEach((line) => {
+            map.value!.removeLayer(line);
+        });
+
+        currentShapePoints.value = [];
+        currentShapeMarkers.value = [];
+        currentShapeLines.value = [];
+        currentShapeName.value = '';
+        isPolygonMode.value = false;
+    } catch (error) {
+        console.error('Error canceling shape:', error);
+    }
+};
+// Save Shapes
+const saveShapes = async () => {
+    if (shapes.value.length === 0) {
+        notyf.error('No shapes to save.');
+        return;
+    }
+
+    if (collectionName.value.trim() === '') {
+        notyf.error('Please enter a collection name.');
+        return;
+    }
+
+    isSaving.value = true;
+
+    try {
+        const saveData = {
+            name: collectionName.value.trim(),
+            shapes: shapes.value.map((shape) => ({
+                name: shape.name,
+                type: shape.type,
+                points: shape.points.map((point) => ({
+                    lat: point.lat,
+                    lng: point.lng,
+                })),
+                coordinates: shape.points.map((point) => [
+                    point.lng,
+                    point.lat,
+                ]),
+                ...(shape.type === 'polygon' && { area_km2: shape.area }),
+                ...(shape.type === 'line' && { length_km: shape.length }),
+                bounds: {
+                    north: Math.max(...shape.points.map((p) => p.lat)),
+                    south: Math.min(...shape.points.map((p) => p.lat)),
+                    east: Math.max(...shape.points.map((p) => p.lng)),
+                    west: Math.min(...shape.points.map((p) => p.lng)),
+                },
+            })),
+            metadata: {
+                totalShapes: shapes.value.length,
+                totalPoints: shapes.value.reduce(
+                    (sum, s) => sum + s.points.length,
+                    0,
+                ),
+                shapeTypes: [...new Set(shapes.value.map((s) => s.type))],
+                mapType: selectedMapType.value,
+                createdAt: new Date().toISOString(),
+                mapCenter: map.value?.getCenter(),
+                mapZoom: map.value?.getZoom(),
+            },
+        };
+
+        const response = await axios.post('/create-marker/save', saveData);
+
+        console.log('Save response:', response.data);
+        notyf.success(
+            `Collection "${collectionName.value}" saved successfully!`,
+        );
+
+        // Close modal and optionally clear shapes
+        showSaveModal.value = false;
+        clearAll();
+    } catch (error) {
+        console.error('Error saving shapes:', error);
+
+        if (error.response) {
+            console.error('Server error:', error.response.data);
+            notyf.error(
+                `Failed to save collection: ${error.response.data.message || error.response.data.error || 'Server error'}`,
+            );
+        } else if (error.request) {
+            console.error('Network error:', error.request);
+            notyf.error(
+                'Network error: Unable to reach the server. Please check your internet connection.',
+            );
+        } else {
+            console.error('Error:', error.message);
+            notyf.error(`Error: ${error.message}`);
+        }
+    } finally {
+        isSaving.value = false;
+    }
+};
 
 // Clear all
 const clearAll = () => {
@@ -2096,11 +2676,11 @@ const clearAll = () => {
         });
         markers.value = [];
 
-        // Clear polygons
-        polygons.value.forEach((item) => {
-            map.value!.removeLayer(item.polygon);
+        // Clear shapes
+        shapes.value.forEach((item) => {
+            map.value!.removeLayer(item.shape);
         });
-        polygons.value = [];
+        shapes.value = [];
 
         // Clear current location marker and circle
         if (currentLocationMarker.value) {
@@ -2112,8 +2692,8 @@ const clearAll = () => {
             currentLocationCircle.value = null;
         }
 
-        // Cancel any ongoing polygon creation
-        cancelPolygon();
+        // Cancel any ongoing shape creation
+        cancelShape();
         showCoordinateInput.value = false;
         clearManualInput();
     } catch (error) {
@@ -2167,79 +2747,6 @@ const logDataForAPI = () => {
     console.log('========================');
 
     return apiData;
-};
-// Save polygons to server
-const savePolygons = async () => {
-    if (polygons.value.length === 0) {
-        notyf.error('No polygons to save.');
-        return;
-    }
-
-    isSaving.value = true;
-
-    try {
-        const saveData = {
-            polygons: polygons.value.map((polygon, index) => ({
-                name: polygon.name || `Polygon ${index + 1}`,
-                points: polygon.points.map((point) => ({
-                    lat: point.lat,
-                    lng: point.lng,
-                })),
-                coordinates: polygon.points.map((point) => [
-                    point.lng,
-                    point.lat,
-                ]),
-                area_km2: polygon.area,
-                bounds: {
-                    north: Math.max(...polygon.points.map((p) => p.lat)),
-                    south: Math.min(...polygon.points.map((p) => p.lat)),
-                    east: Math.max(...polygon.points.map((p) => p.lng)),
-                    west: Math.min(...polygon.points.map((p) => p.lng)),
-                },
-            })),
-            metadata: {
-                totalPolygons: polygons.value.length,
-                totalPolygonPoints: polygons.value.reduce(
-                    (sum, p) => sum + p.points.length,
-                    0,
-                ),
-                mapType: selectedMapType.value,
-                createdAt: new Date().toISOString(),
-                mapCenter: map.value?.getCenter(),
-                mapZoom: map.value?.getZoom(),
-            },
-        };
-
-        const response = await axios.post('/create-marker/save', saveData);
-
-        console.log('Save response:', response.data);
-        notyf.success(`${polygons.value.length} Polygons saved successfully!`);
-
-        // Optionally clear the polygons after successful save
-        clearAll();
-    } catch (error) {
-        console.error('Error saving polygons:', error);
-
-        if (error.response) {
-            // Server responded with error status
-            console.error('Server error:', error.response.data);
-            notyf.error(
-                `Failed to save polygons: ${error.response.data.message || error.response.data.error || 'Server error'}`,
-            );
-        } else if (error.request) {
-            // Request was made but no response received
-            console.error('Network error:', error.request);
-            notyf.error(
-                'Network error: Unable to reach the server. Please check your internet connection.',
-            );
-        } else {
-            // Something else happened
-            console.error('Error:', error.message);
-            notyf.error(`Error: ${error.message}`);
-        }
-    } finally {
-        isSaving.value = false;
-    }
 };
 const removePolygon = (index: number) => {
     if (polygons.value[index] && map.value) {

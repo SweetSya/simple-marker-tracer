@@ -117,8 +117,8 @@
                     <div class="tooltip-arrow" data-popper-arrow></div>
                 </div>
 
-                <Link
-                    href="/logout"
+                <button
+                    @click="logout"
                     data-tooltip-target="tooltip-logout"
                     class="group inline-flex flex-col items-center justify-center rounded-e-full px-5 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
@@ -126,7 +126,7 @@
                         class="h-5 w-5 text-gray-500 transition-colors duration-200 group-hover:text-red-600 dark:text-gray-400 dark:group-hover:text-red-500"
                     />
                     <span class="sr-only">Logout</span>
-                </Link>
+                </button>
                 <div
                     id="tooltip-logout"
                     role="tooltip"
@@ -141,7 +141,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     LayoutDashboard,
     LogOut,
@@ -149,6 +149,7 @@ import {
     Plus,
     User,
 } from 'lucide-vue-next';
+import Swal from 'sweetalert2';
 import { computed } from 'vue';
 
 const page = usePage();
@@ -157,7 +158,21 @@ const page = usePage();
 const currentPath = computed(() => {
     return page.url;
 });
-
+// Logout function
+const logout = () => {
+    Swal.fire({
+        title: 'Are you sure you want to logout?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, logout!',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.visit('/logout');
+        }
+    });
+};
 // Check if route is active
 const isActiveRoute = (routePath: string) => {
     return currentPath.value === routePath;

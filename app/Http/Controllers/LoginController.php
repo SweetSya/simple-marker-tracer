@@ -32,7 +32,10 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-
+            session()->flash('notyf', [
+                'type' => 'success',
+                'message' => 'Welcome back, ' . Auth::user()->name . '!',
+            ]);
             return redirect()->intended('/dashboard');
         }
 

@@ -1,6 +1,6 @@
 <template>
     <AppLayout>
-        <div class="min-h-screen bg-gray-50 p-4">
+        <div class="min-h-screen p-4">
             <!-- Header -->
             <div
                 class="mb-4 rounded-xl border border-primary-200 bg-primary-50 p-4 shadow-sm"
